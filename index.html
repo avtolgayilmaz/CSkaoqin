@@ -3,190 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS Architecture & Analytics | Enterprise</title>
+    <title>The Hive | CS Analytics (TR/CN)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Fraunces:opsz,wght@9..144,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0a0a0c;
-            --card-bg: rgba(23, 23, 26, 0.7);
-            --accent: #d4af37; /* Altın/Mimar dokunuşu */
-            --text-main: #e4e4e7;
+            --honey-yellow: #FFD700;
+            --deep-black: #0F0F0F;
         }
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-main);
-            background-image: radial-gradient(circle at 2px 2px, #1a1a1e 1px, transparent 0);
-            background-size: 40px 40px;
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; 
+            background-color: var(--deep-black); 
+            color: white;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg id='hexagons' fill='%231a1a1a' fill-opacity='0.4' fill-rule='nonzero'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9l10.99-6.35L25 17.9v12.7L13.99 36.95 3 30.6V17.9z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
-        .architect-title { font-family: 'Fraunces', serif; letter-spacing: -0.02em; }
+        .bee-title { font-family: 'Syne', sans-serif; text-transform: uppercase; }
         .glass-card { 
-            background: var(--card-bg); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255,255,255,0.08); 
-            border-radius: 24px;
+            background: rgba(26, 26, 26, 0.9); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 215, 0, 0.1); 
+            border-radius: 4px; /* Mimari sert hatlar */
+            transition: all 0.3s ease;
         }
-        .accent-border { border-left: 4px solid var(--accent); }
-        .gradient-text {
-            background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .glass-card:hover { border-color: var(--honey-yellow); }
+        .stat-value { color: var(--honey-yellow); font-weight: 800; }
+        .btn-bee {
+            background-color: var(--honey-yellow);
+            color: black;
+            font-weight: 800;
+            transition: all 0.3s ease;
         }
-        .custom-shadow { shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .btn-bee:hover { background-color: white; box-shadow: 0 0 20px var(--honey-yellow); }
+        .lang-switch { font-size: 0.7rem; letter-spacing: 2px; color: #666; }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-10">
+<body class="p-6 md:p-12">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
-            <div class="space-y-2">
-                <span class="text-xs uppercase tracking-[0.3em] text-gray-500 font-bold">Data Architecture Unit</span>
-                <h1 class="architect-title text-5xl md:text-6xl gradient-text">CS Intelligence Suite</h1>
-                <p class="text-gray-400 font-light max-w-md">Binlerce satır veriyi, yapısal bir sanat eserine ve stratejik kararlara dönüştüren analitik motor.</p>
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start mb-16">
+            <div>
+                <div class="flex space-x-4 mb-4 lang-switch uppercase font-bold">
+                    <span class="text-yellow-500">TR / Türkçe</span>
+                    <span>CN / 中文</span>
+                </div>
+                <h1 class="bee-title text-5xl md:text-7xl leading-none">THE <span class="text-yellow-400">HIVE</span></h1>
+                <h2 class="text-xl md:text-2xl font-light text-gray-500 mt-2 uppercase tracking-tighter">蜂巢分析系统 / Kovan Analitik Sistemi</h2>
             </div>
             
-            <div class="relative group">
+            <div class="mt-8 md:mt-0">
                 <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" class="hidden">
-                <label for="fileInput" class="cursor-pointer flex items-center space-x-3 bg-white text-black px-8 py-4 rounded-2xl hover:bg-gray-200 transition-all duration-300 transform group-hover:-translate-y-1 shadow-2xl font-bold">
-                    <span>📂 Veri Kaynağını Bağla (.xlsx / .csv)</span>
+                <label for="fileInput" class="btn-bee cursor-pointer px-8 py-4 flex flex-col items-center">
+                    <span class="text-sm">VERİ YÜKLE / 上传数据</span>
+                    <span class="text-[10px] opacity-70">XLSX, CSV</span>
                 </label>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10" id="kpiGrid">
-            <div class="glass-card p-8 accent-border">
-                <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Hacim Kapasitesi</p>
-                <h3 id="totalHandled" class="text-4xl font-extrabold mt-3 italic">0</h3>
-                <p class="text-xs text-gray-600 mt-2">Toplam İşlenen Request</p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+            <div class="glass-card p-6 border-l-4 border-yellow-500">
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Hacim / 处理量</p>
+                <h3 id="totalHandled" class="stat-value text-4xl mt-2">0</h3>
             </div>
-            <div class="glass-card p-8 accent-border">
-                <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Yanıt Statikleri</p>
-                <h3 id="avgResponse" class="text-4xl font-extrabold mt-3 italic">0<span class="text-lg">s</span></h3>
-                <p class="text-xs text-gray-600 mt-2">Ortalama Yanıt Gecikmesi</p>
+            <div class="glass-card p-6 border-l-4 border-yellow-500">
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Hız / 响应速度</p>
+                <h3 id="avgRes" class="stat-value text-4xl mt-2">0<span class="text-lg">s</span></h3>
             </div>
-            <div class="glass-card p-8 accent-border border-red-900/50">
-                <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Sistem Kaçakları</p>
-                <h3 id="lostCalls" class="text-4xl font-extrabold mt-3 text-red-500 italic">0</h3>
-                <p class="text-xs text-gray-600 mt-2">Auto-Close / Kayıp Müşteri</p>
+            <div class="glass-card p-6 border-l-4 border-white">
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Kayıp / 自动关闭</p>
+                <h3 id="lost" class="stat-value text-4xl mt-2 text-white">0</h3>
             </div>
-            <div class="glass-card p-8 accent-border border-amber-500/50">
-                <p class="text-xs text-gray-500 uppercase font-bold tracking-widest">Yapısal Sağlık</p>
-                <h3 id="resRate" class="text-4xl font-extrabold mt-3 text-amber-500 italic">%0</h3>
-                <p class="text-xs text-gray-600 mt-2">Verimlilik Katsayısı</p>
+            <div class="glass-card p-6 border-l-4 border-yellow-500">
+                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Başarı / 解决率</p>
+                <h3 id="rate" class="stat-value text-4xl mt-2">%0</h3>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-            <div class="lg:col-span-2 glass-card p-10 overflow-hidden">
-                <div class="flex justify-between items-center mb-8">
-                    <h4 class="text-xl font-bold italic">Operasyonel Yük Dağılımı</h4>
-                    <div class="h-1 w-20 bg-gray-800 rounded-full"></div>
-                </div>
-                <div class="h-[400px]">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+            <div class="lg:col-span-2 glass-card p-8">
+                <h4 class="text-sm font-bold mb-8 uppercase tracking-widest text-yellow-500">Team Architecture / 团队架构</h4>
+                <div class="h-[300px]">
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-6">
-                <div class="glass-card p-8 flex-1 bg-gradient-to-br from-[#17171a] to-[#0a0a0c]">
-                    <h5 class="text-blue-400 font-extrabold text-sm uppercase tracking-tighter mb-4 flex items-center">
-                        <span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> System Kernel Review
-                    </h5>
-                    <p id="devNote" class="text-sm text-gray-400 leading-relaxed font-mono">
-                        Girdi bekleniyor... Veri setini yüklediğinizde, 500 yıllık yazılım tecrübemle kod tabanındaki anomalileri raporlayacağım.
+            <div class="flex flex-col gap-4">
+                <div class="glass-card p-6">
+                    <h5 class="text-xs font-bold text-blue-400 mb-3 uppercase">💻 Dev Log / 开发日志</h5>
+                    <p id="devNote" class="text-xs text-gray-400 font-mono leading-relaxed">
+                        Sistem beklemede... / 系统就绪，等待数据...
                     </p>
                 </div>
-                <div class="glass-card p-8 flex-1 border border-amber-900/20">
-                    <h5 class="text-amber-500 font-extrabold text-sm uppercase tracking-tighter mb-4 flex items-center">
-                        <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span> Architectural Integrity
-                    </h5>
-                    <p id="archNote" class="text-sm text-gray-400 leading-relaxed italic">
-                        Henüz bir yapı inşa edilmedi. Verileriniz geldiğinde, ekibinizin kurduğu bu dijital binanın sarsılmazlığını analiz edeceğim.
+                <div class="glass-card p-6 border-t-2 border-yellow-900">
+                    <h5 class="text-xs font-bold text-yellow-600 mb-3 uppercase">🏛️ Architect / 建筑师</h5>
+                    <p id="archNote" class="text-xs text-gray-400 leading-relaxed italic">
+                        Yapısal analiz için veri bekleniyor. / 等待数据进行结构分析。
                     </p>
                 </div>
             </div>
         </div>
 
-        <footer class="text-center text-gray-600 text-[10px] uppercase tracking-[0.5em] py-10">
-            Legacy Excellence &bull; Software Engineering &bull; Architectural Design
+        <footer class="text-center text-gray-800 text-[9px] uppercase tracking-[1em] py-8 border-t border-yellow-900/20">
+            Hive Performance Logic &bull; 蜂巢逻辑
         </footer>
     </div>
 
     <script>
-        let myChart;
+        let chartInstance;
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const reader = new FileReader();
+            if (!file) return;
 
             if (file.name.endsWith('.csv')) {
                 Papa.parse(file, {
                     header: true,
                     dynamicTyping: true,
-                    complete: function(results) { processData(results.data); }
+                    complete: function(r) { process(r.data); }
                 });
             } else {
-                reader.onload = function(evt) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
                     const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const sheetName = workbook.SheetNames[0];
-                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                    processData(json);
+                    const wb = XLSX.read(data, {type: 'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    process(json);
                 };
                 reader.readAsArrayBuffer(file);
             }
         });
 
-        function processData(rawData) {
-            // Veri temizleme
-            const data = rawData.filter(d => d.客服昵称 && d.客服昵称 !== "");
-
+        function process(rawData) {
+            const data = rawData.filter(d => d.客服昵称);
             const stats = {
                 total: data.reduce((a, b) => a + (Number(b.客服处理量) || 0), 0),
-                avgRes: data.reduce((a, b) => a + (Number(b.客服平均响应时长) || 0), 0) / data.length,
+                res: data.reduce((a, b) => a + (Number(b.客服平均响应时长) || 0), 0) / data.length,
                 lost: data.reduce((a, b) => a + (Number(b.自动关闭量) || 0), 0),
-                csMap: {}
+                map: {}
             };
 
-            // CS bazlı gruplama
             data.forEach(d => {
-                if(!stats.csMap[d.客服昵称]) stats.csMap[d.客服昵称] = 0;
-                stats.csMap[d.客服昵称] += (Number(d.客服处理量) || 0);
+                stats.map[d.客服昵称] = (stats.map[d.客服昵称] || 0) + (Number(d.客服处理量) || 0);
             });
 
-            updateUI(stats);
-            renderChart(stats.csMap);
-            generateInsights(stats);
+            // UI Update
+            document.getElementById('totalHandled').innerText = stats.total.toLocaleString();
+            document.getElementById('avgRes').innerHTML = `${Math.round(stats.res)}<span class="text-lg">s</span>`;
+            document.getElementById('lost').innerText = stats.lost.toLocaleString();
+            document.getElementById('rate').innerText = `%${(stats.total > 0 ? ((stats.total - stats.lost) / stats.total * 100).toFixed(1) : 0)}`;
+
+            updateChart(stats.map);
+            updateInsights(stats);
         }
 
-        function updateUI(s) {
-            document.getElementById('totalHandled').innerText = s.total.toLocaleString();
-            document.getElementById('avgResponse').innerHTML = `${Math.round(s.avgRes)}<span class="text-lg">s</span>`;
-            document.getElementById('lostCalls').innerText = s.lost.toLocaleString();
-            const rate = s.total > 0 ? ((s.total - s.lost) / s.total * 100).toFixed(1) : 0;
-            document.getElementById('resRate').innerText = `%${rate}`;
-        }
-
-        function renderChart(csData) {
+        function updateChart(map) {
             const ctx = document.getElementById('mainChart').getContext('2d');
-            if(myChart) myChart.destroy();
-
-            myChart = new Chart(ctx, {
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(csData),
+                    labels: Object.keys(map),
                     datasets: [{
-                        label: 'İşlem Hacmi',
-                        data: Object.values(csData),
-                        backgroundColor: '#ffffff',
-                        hoverBackgroundColor: '#d4af37',
-                        borderRadius: 12,
-                        barThickness: 40
+                        label: 'Hacim / 量',
+                        data: Object.values(map),
+                        backgroundColor: '#FFD700',
+                        barThickness: 20
                     }]
                 },
                 options: {
@@ -194,18 +178,20 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { grid: { color: '#1a1a1e' }, border: { display: false }, ticks: { color: '#666' } },
-                        x: { grid: { display: false }, ticks: { color: '#fff', font: { weight: 'bold' } } }
+                        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#444' } },
+                        x: { grid: { display: false }, ticks: { color: '#FFD700' } }
                     }
                 }
             });
         }
 
-        function generateInsights(s) {
-            const lossRate = (s.lost / s.total * 100).toFixed(1);
-            document.getElementById('devNote').innerText = `[LOG] Thread Analysis Complete: Toplam ${s.total} paket işlendi. Ortalama bekleme süresi ${Math.round(s.avgRes)}ms. Stack Trace incelemesinde veri kaybı oranı (lost packets) %${lossRate} olarak saptandı. Sistem darboğazı (bottleneck) tespiti için personel eşitleme algoritması öneriliyor.`;
+        function updateInsights(s) {
+            const loss = (s.lost/s.total*100).toFixed(1);
+            document.getElementById('devNote').innerText = `[LOG] ${s.total} processed. Loss: %${loss}. 
+            系统中处理了 ${s.total} 条数据。数据丢失率: %${loss}。`;
             
-            document.getElementById('archNote').innerText = `Rapor: İnşa ettiğiniz bu operasyonel binada, ${s.lost} müşterinin kapıdan girmeden dönmesi, 'giriş holü' tasarımındaki (ilk karşılama hızı) eksikliği gösterir. %${lossRate} oranındaki bu yapısal çatlak, zamanla binanın temeline zarar verebilir. Altın oranı yakalamak için hız ve çözüm dengesi kurulmalı.`;
+            document.getElementById('archNote').innerText = `Mimari: %${loss} kayıp oranı, kovanın yalıtım problemidir. 
+            建筑分析: %${loss} 的自动关闭率表明蜂巢的密封性存在问题。`;
         }
     </script>
 </body>
