@@ -3,104 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YAVER | CS Analitik</title>
+    <title>YAVER v9 | Profiles & Auditor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Lexend+Exa:wght@800&family=Noto+Sans+SC:wght@500&display=swap" rel="stylesheet">
     
     <style>
         :root { --ya-turq: #06b6d4; --ver-yellow: #fbbf24; --bg-slate: #0f172a; }
-        body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; background-color: var(--bg-slate); color: #f1f5f9; }
+        body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; background-color: var(--bg-slate); color: #f1f5f9; scroll-behavior: smooth; }
         .logo-font { font-family: 'Lexend Exa', sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .glass-card { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         .btn-yaver { background: linear-gradient(90deg, var(--ya-turq) 0%, var(--ver-yellow) 100%); color: #000; font-weight: 800; }
-        .btn-yaver:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6, 182, 212, 0.3); }
-        .log-scroll::-webkit-scrollbar { width: 4px; }
-        .log-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .violation-late { color: #f87171; border-left: 3px solid #f87171; }
-        .violation-early { color: #fb923c; border-left: 3px solid #fb923c; }
+        .tab-btn { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: var(--ver-yellow); border-bottom-color: var(--ver-yellow); }
+        .section-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ya-turq); font-weight: 800; margin-bottom: 1rem; display: block; }
+        .data-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.25rem; }
+        .data-value { font-size: 1rem; font-weight: 700; color: #fff; }
+        .violation-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; }
+        tr:nth-child(even) { background: rgba(255,255,255,0.02); }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-8 border-b border-white/5 pb-12">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/5 pb-10 gap-6">
             <div class="text-center md:text-left">
-                <h1 class="logo-font text-6xl md:text-7xl tracking-tighter leading-none">
+                <h1 class="logo-font text-5xl md:text-6xl tracking-tighter">
                     <span style="color: var(--ya-turq);">YA</span><span style="color: var(--ver-yellow);">VER</span>
                 </h1>
-                <p class="text-xl md:text-2xl font-medium tracking-[0.2em] text-slate-500 mt-2 uppercase">
-                    CS 考勤分析
-                </p>
-                <p class="text-[10px] text-slate-600 font-bold uppercase mt-4 tracking-widest italic">
-                    "Yalla Verimlilik" Engine v8.0
-                </p>
+                <p class="text-xs font-bold tracking-[0.4em] text-slate-500 mt-2 uppercase italic">CS 考勤与性能分析</p>
             </div>
-
             <div class="flex flex-col items-center">
-                <input type="file" id="yaverInput" accept=".csv, .xlsx" class="hidden">
-                <label for="yaverInput" class="btn-yaver cursor-pointer px-12 py-5 rounded-2xl shadow-2xl text-sm transition-all uppercase tracking-wider">
-                    VERİ KOVANINI YÜKLE / 上传数据
+                <input type="file" id="uploadInput" accept=".csv, .xlsx" class="hidden">
+                <label for="uploadInput" class="btn-yaver cursor-pointer px-10 py-4 rounded-xl shadow-2xl transition-all hover:scale-105 uppercase text-sm">
+                    VERİ KOVANINI YÜKLE / 上传
                 </label>
-                <div class="mt-4 flex gap-4 text-[10px] font-bold text-slate-500 uppercase">
-                    <span>Pekin (UTC+8)</span>
-                    <span class="text-white">➔</span>
-                    <span>TR (UTC+3)</span>
-                </div>
+                <span class="text-[10px] mt-2 text-slate-500 font-bold">UTC+8 (Pekin) ➔ UTC+3 (TR)</span>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-cyan-500">
-                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Net Kesinti / 扣款</p>
-                <h2 id="kpiFine" class="text-5xl font-black text-cyan-400">$0</h2>
+        <div id="profilesContainer" class="space-y-12">
+            <div class="text-center p-20 glass-card rounded-[2rem]">
+                <p class="text-slate-500 italic uppercase tracking-widest">Analiz başlatmak için veri seti yükleyin...</p>
             </div>
-            <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-amber-400">
-                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Toplam İhlal / 违规次数</p>
-                <h2 id="kpiViol" class="text-5xl font-black text-amber-400">0</h2>
-            </div>
-            <div class="glass p-8 rounded-[2rem] text-center">
-                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Verimlilik / 效率</p>
-                <h2 id="kpiEff" class="text-5xl font-black text-white">%0</h2>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-2 glass rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <div class="p-6 bg-white/5 flex justify-between items-center border-b border-white/5">
-                    <h3 class="font-bold text-sm tracking-widest text-slate-400 uppercase">Maaş & Vardiya Cetveli</h3>
-                    <span class="text-[10px] text-cyan-500 font-black">ACTIVE AUDIT</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-black/20 text-[10px] uppercase font-bold text-slate-500">
-                            <tr>
-                                <th class="p-6">CS / 姓名</th>
-                                <th class="p-6">TR Vardiya</th>
-                                <th class="p-6 text-center">İhlal (G/E)</th>
-                                <th class="p-6 text-right">Kesinti / 罚金</th>
-                            </tr>
-                        </thead>
-                        <tbody id="yaverBody" class="text-sm divide-y divide-white/5">
-                            <tr><td colspan="4" class="p-20 text-center text-slate-600 italic tracking-widest uppercase">Veri Akışı Bekleniyor...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="glass rounded-[2.5rem] flex flex-col h-[550px] shadow-2xl">
-                <div class="p-6 bg-white/5 border-b border-white/5">
-                    <h3 class="font-bold text-sm tracking-widest text-amber-500 uppercase">İhlal Kanıtları / 证据</h3>
-                </div>
-                <div id="logBox" class="flex-1 overflow-y-auto p-4 space-y-3 log-scroll">
-                    </div>
-            </div>
-
         </div>
     </div>
+
+    <template id="csTemplate">
+        <div class="cs-profile glass-card rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div class="p-8 bg-white/5 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-yellow-500 flex items-center justify-center text-black font-black text-xl logo-font cs-initial">?</div>
+                    <div>
+                        <h2 class="text-2xl font-black text-white cs-name italic">CS NAME</h2>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest cs-shift">Vardiya: --</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 text-center">
+                    <div><p class="text-[9px] text-slate-500 uppercase font-bold">Toplam İhlal</p><p class="text-xl font-black text-red-400 cs-total-vio">0</p></div>
+                    <div class="border-l border-white/10 pl-6">
+                        <p class="text-[9px] text-slate-500 uppercase font-bold">Maaş Etkisi</p>
+                        <p class="text-xl font-black text-amber-400 cs-penalty">$0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">1. Zaman ve Katılım (Attendance)</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="data-label">Geç Kalma</p><p class="data-value cs-late">0</p></div>
+                        <div><p class="data-label">Erken Çıkış</p><p class="data-value cs-early">0</p></div>
+                        <div class="col-span-2"><p class="data-label">Ort. Online Süre</p><p class="data-value cs-avg-online">--</p></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">2. İşlem ve Performans (Performance)</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="data-label">Toplam İşlem</p><p class="data-value cs-vol">0</p></div>
+                        <div><p class="data-label">Toplam Yanıt</p><p class="data-value cs-replies">0</p></div>
+                        <div class="col-span-2"><p class="data-label">Ort. Yanıt Hızı</p><p class="data-value cs-speed">--</p></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">3. Operasyonel Detaylar (Operational)</span>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="data-label">Oto. Kapanan</p><p class="data-value cs-auto-close">0</p></div>
+                        <div><p class="data-label">Mola Süresi</p><p class="data-value cs-stops">--</p></div>
+                        <div class="col-span-2"><p class="data-label">Çözüm Oranı</p><p class="data-value cs-resolve-rate">%0</p></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-8 border-t border-white/5">
+                <details class="group">
+                    <summary class="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all flex items-center gap-2">
+                        Günlük Detaylı Kanıt Loglarını Göster / 展开详情
+                        <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-6 overflow-x-auto">
+                        <table class="w-full text-left text-[11px]">
+                            <thead>
+                                <tr class="text-slate-600 border-b border-white/5">
+                                    <th class="p-3 uppercase">Tarih</th>
+                                    <th class="p-3 uppercase">Giriş (TR)</th>
+                                    <th class="p-3 uppercase">Çıkış (TR)</th>
+                                    <th class="p-3 uppercase">Hacim</th>
+                                    <th class="p-3 uppercase">İhlal</th>
+                                    <th class="p-3 uppercase text-right">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody class="cs-log-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </template>
 
     <script>
         const SHIFTS = {
@@ -110,7 +135,7 @@
             'Çiğdem': { start: 20, end: 2, label: '20:00 - 02:00' }
         };
 
-        document.getElementById('yaverInput').addEventListener('change', function(e) {
+        document.getElementById('uploadInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (evt) => {
@@ -122,112 +147,127 @@
                     const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
                     json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 }
-                yaverAudit(json);
+                processProfiles(json);
             };
             reader.readAsArrayBuffer(file);
         });
 
-        function yaverAudit(data) {
-            const results = {};
-            const logs = [];
+        function processProfiles(data) {
+            const profiles = {};
             const clean = data.filter(d => d.客服昵称 && SHIFTS[d.客服昵称]);
 
             clean.forEach(row => {
                 const name = row.客服昵称;
-                if (!results[name]) results[name] = { late: 0, early: 0, vol: 0 };
+                if (!profiles[name]) profiles[name] = { 
+                    attendance: [], 
+                    stats: { late: 0, early: 0, totalOnline: 0, vol: 0, replies: 0, speed: 0, autoClose: 0, stops: 0, resolves: 0, rows: 0 }
+                };
 
-                // PEKİN -> TR SAAT DÖNÜŞÜMÜ (GÜVENLİ PARSE)
-                const trLogin = convertToTR(row.客服上线时间);
-                const trLogout = convertToTR(row.客服下线时间);
-                
+                const trLogin = convertTR(row.客服上线时间);
+                const trLogout = convertTR(row.客服下线时间);
                 const s = SHIFTS[name];
-                const hIn = trLogin.getHours();
-                const mIn = trLogin.getMinutes();
-                const hOut = trLogout.getHours();
-                const mOut = trLogout.getMinutes();
 
-                // Geç Kalma Denetimi (10dk tolerans)
-                if (hIn > s.start || (hIn === s.start && mIn > 10)) {
-                    // Gece vardiyası (20:00) için sabah 5'ten önceki girişleri yanlış geç kalma sayma
-                    if (!(s.start === 20 && hIn < 10)) {
-                        results[name].late++;
-                        logs.push({ name, type: 'GEÇ KALMA', time: format(trLogin), date: row.日期 });
-                    }
+                // İhlal Kontrolü
+                let vioType = null;
+                if (trLogin.getHours() > s.start || (trLogin.getHours() === s.start && trLogin.getMinutes() > 10)) {
+                    if (!(s.start === 20 && trLogin.getHours() < 10)) { vioType = 'GEÇ'; profiles[name].stats.late++; }
                 }
+                
+                let isEarly = false;
+                if (s.end === 2) {
+                    if (trLogout.getHours() < 2 || trLogout.getHours() >= 20) {
+                        if (trLogout.getHours() < 2 && (trLogout.getHours() > 0 || trLogout.getMinutes() < 55)) {
+                            if (trLogout.getHours() === 1 && trLogout.getMinutes() < 55) isEarly = true;
+                            else if (trLogout.getHours() === 0) isEarly = true;
+                        } else if (trLogout.getHours() >= 20 && trLogout.getHours() < 23) isEarly = true;
+                    } else isEarly = true;
+                } else if (trLogout.getHours() < s.end) isEarly = true;
 
-                // Erken Çıkış Denetimi
-                let earlyOut = false;
-                if (s.end === 2) { // Dilan & Çiğdem
-                    if (hOut < 2 || hOut >= 20) {
-                        if (hOut < 2 && (hOut > 0 || mOut < 55)) {
-                            if (hOut === 1 && mOut < 55) earlyOut = true;
-                            else if (hOut === 0) earlyOut = true;
-                        } else if (hOut >= 20 && hOut < 23) earlyOut = true;
-                    } else earlyOut = true;
-                } else {
-                    if (hOut < s.end) earlyOut = true;
-                }
+                if (isEarly) { vioType = vioType ? 'GEÇ+ERKEN' : 'ERKEN'; profiles[name].stats.early++; }
 
-                if (earlyOut) {
-                    results[name].early++;
-                    logs.push({ name, type: 'ERKEN ÇIKIŞ', time: format(trLogout), date: row.日期 });
-                }
+                // Veri Toplama
+                profiles[name].stats.vol += (row.客服处理量 || 0);
+                profiles[name].stats.replies += (row.客服回复量 || 0);
+                profiles[name].stats.autoClose += (row.自动关闭量 || 0);
+                profiles[name].stats.totalOnline += (row.客服在线时长 || 0);
+                profiles[name].stats.speed += (row.客服平均响应时长 || 0);
+                profiles[name].stats.stops += (row.停止接单时长 || 0);
+                profiles[name].stats.resolves += (row.已回复解决量 || 0);
+                profiles[name].stats.rows++;
 
-                results[name].vol += (Number(row.客服处理量) || 0);
+                profiles[name].attendance.push({
+                    date: row.日期,
+                    login: formatT(trLogin),
+                    logout: formatT(trLogout),
+                    vol: row.客服处理量,
+                    vio: vioType,
+                    status: row.客服状态
+                });
             });
 
-            renderYaver(results, logs);
+            renderProfiles(profiles);
         }
 
-        function convertToTR(str) {
+        function convertTR(str) {
             const p = str.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
             if(!p) return new Date();
-            const pek = new Date(p[1], p[2]-1, p[3], p[4], p[5], p[6]);
-            return new Date(pek.getTime() - (5 * 60 * 60 * 1000));
+            return new Date(new Date(p[1], p[2]-1, p[3], p[4], p[5], p[6]).getTime() - (5 * 60 * 60 * 1000));
         }
 
-        function format(d) { return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0'); }
+        function formatT(d) { return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0'); }
 
-        function renderYaver(res, logs) {
-            const tbody = document.getElementById('yaverBody');
-            const logBox = document.getElementById('logBox');
-            tbody.innerHTML = ''; logBox.innerHTML = '';
-            
-            let totalFine = 0, totalV = 0;
+        function renderProfiles(profiles) {
+            const container = document.getElementById('profilesContainer');
+            const template = document.getElementById('csTemplate');
+            container.innerHTML = '';
 
-            Object.keys(res).forEach(name => {
-                const r = res[name];
-                const viol = r.late + r.early;
-                const fine = viol > 4 ? viol * 20 : 0;
-                totalFine += fine; totalV += viol;
+            Object.keys(profiles).forEach(name => {
+                const p = profiles[name];
+                const s = p.stats;
+                const clone = template.content.cloneNode(true);
 
-                tbody.innerHTML += `
-                    <tr class="hover:bg-white/[0.02] transition-colors">
-                        <td class="p-6 font-bold text-white">${name}</td>
-                        <td class="p-6 text-slate-500 font-medium italic">${SHIFTS[name].label}</td>
-                        <td class="p-6 text-center">
-                            <span class="text-red-400 font-bold">${r.late}G</span> / <span class="text-orange-400 font-bold">${r.early}E</span>
-                        </td>
-                        <td class="p-6 text-right font-black ${fine > 0 ? 'text-red-500' : 'text-emerald-500'}">
-                            ${fine > 0 ? '-$'+fine : '$0'}
-                        </td>
-                    </tr>
-                `;
+                // Header
+                clone.querySelector('.cs-initial').innerText = name[0];
+                clone.querySelector('.cs-name').innerText = name;
+                clone.querySelector('.cs-shift').innerText = `Vardiya (TR): ${SHIFTS[name].label}`;
+                const totalVio = s.late + s.early;
+                clone.querySelector('.cs-total-vio').innerText = totalVio;
+                const penalty = totalVio > 4 ? totalVio * 20 : 0;
+                clone.querySelector('.cs-penalty').innerText = `$${penalty}`;
+
+                // 1. Attendance
+                clone.querySelector('.cs-late').innerText = s.late;
+                clone.querySelector('.cs-early').innerText = s.early;
+                clone.querySelector('.cs-avg-online').innerText = Math.round((s.totalOnline / s.rows) / 60) + " dk";
+
+                // 2. Performance
+                clone.querySelector('.cs-vol').innerText = s.vol;
+                clone.querySelector('.cs-replies').innerText = s.replies;
+                clone.querySelector('.cs-speed').innerText = Math.round(s.speed / s.rows) + " sn";
+
+                // 3. Operational
+                clone.querySelector('.cs-auto-close').innerText = s.autoClose;
+                clone.querySelector('.cs-stops').innerText = Math.round(s.stops / s.rows / 60) + " dk";
+                const resRate = s.vol > 0 ? ((s.resolves / s.vol) * 100).toFixed(1) : 0;
+                clone.querySelector('.cs-resolve-rate').innerText = `%${resRate}`;
+
+                // Table
+                const tbody = clone.querySelector('.cs-log-body');
+                p.attendance.reverse().forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="p-3 text-slate-400">${log.date}</td>
+                        <td class="p-3 font-bold">${log.login}</td>
+                        <td class="p-3 font-bold">${log.logout}</td>
+                        <td class="p-3 text-slate-400">${log.vol}</td>
+                        <td class="p-3">${log.vio ? `<span class="violation-badge ${log.vio.includes('GEÇ') ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}">${log.vio}</span>` : '-'}</td>
+                        <td class="p-3 text-right text-[9px] uppercase font-bold text-slate-600">${log.status}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                container.appendChild(clone);
             });
-
-            logs.reverse().forEach(l => {
-                const cls = l.type === 'GEÇ KALMA' ? 'violation-late' : 'violation-early';
-                logBox.innerHTML += `
-                    <div class="glass p-4 rounded-xl text-[10px] ${cls}">
-                        <div class="flex justify-between font-bold mb-1"><span>${l.name}</span><span>${l.type}</span></div>
-                        <div class="text-slate-500">${l.date} | TR SAATİ: ${l.time}</div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('kpiFine').innerText = '$' + totalFine;
-            document.getElementById('kpiViol').innerText = totalV;
-            document.getElementById('kpiEff').innerText = '%' + (100 - (totalV * 0.5)).toFixed(1);
         }
     </script>
 </body>
