@@ -3,72 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hive v7 | The Auditor</title>
+    <title>YAVER | CS Analitik</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Lexend+Exa:wght@800&family=Noto+Sans+SC:wght@500&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #e2e8f0; }
-        .card { background: #1e293b; border: 1px solid rgba(255,255,255,0.05); border-radius: 1.5rem; }
-        .btn-yellow { background: #fbbf24; color: #000; font-weight: 700; transition: 0.2s; }
-        .btn-yellow:hover { background: #fff; transform: scale(1.02); }
-        .log-row { font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .violation-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.65rem; }
-        .late-tag { background: #7f1d1d; color: #fca5a5; }
-        .early-tag { background: #7c2d12; color: #fdba74; }
+        :root { --ya-turq: #06b6d4; --ver-yellow: #fbbf24; --bg-slate: #0f172a; }
+        body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; background-color: var(--bg-slate); color: #f1f5f9; }
+        .logo-font { font-family: 'Lexend Exa', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .btn-yaver { background: linear-gradient(90deg, var(--ya-turq) 0%, var(--ver-yellow) 100%); color: #000; font-weight: 800; }
+        .btn-yaver:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6, 182, 212, 0.3); }
+        .log-scroll::-webkit-scrollbar { width: 4px; }
+        .log-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .violation-late { color: #f87171; border-left: 3px solid #f87171; }
+        .violation-early { color: #fb923c; border-left: 3px solid #fb923c; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-10">
 
     <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 border-b border-white/5 pb-8">
-            <div>
-                <h1 class="text-4xl font-extrabold text-white tracking-tighter">HIVE <span class="text-amber-400">AUDITOR</span></h1>
-                <p class="text-slate-400 text-sm mt-1 uppercase tracking-widest font-semibold">Pekin ➔ Türkiye Saat Dönüşümü & Şeffaf Ceza Takibi</p>
+        <header class="flex flex-col md:flex-row justify-between items-center mb-12 gap-8 border-b border-white/5 pb-12">
+            <div class="text-center md:text-left">
+                <h1 class="logo-font text-6xl md:text-7xl tracking-tighter leading-none">
+                    <span style="color: var(--ya-turq);">YA</span><span style="color: var(--ver-yellow);">VER</span>
+                </h1>
+                <p class="text-xl md:text-2xl font-medium tracking-[0.2em] text-slate-500 mt-2 uppercase">
+                    CS 考勤分析
+                </p>
+                <p class="text-[10px] text-slate-600 font-bold uppercase mt-4 tracking-widest italic">
+                    "Yalla Verimlilik" Engine v8.0
+                </p>
             </div>
-            <div class="flex flex-col items-end gap-3">
-                <input type="file" id="fileIn" accept=".csv, .xlsx" class="hidden">
-                <label for="fileIn" class="btn-yellow cursor-pointer px-8 py-3 rounded-xl shadow-2xl flex items-center gap-2">
-                    <span>VERİ ANALİZİNİ BAŞLAT</span>
+
+            <div class="flex flex-col items-center">
+                <input type="file" id="yaverInput" accept=".csv, .xlsx" class="hidden">
+                <label for="yaverInput" class="btn-yaver cursor-pointer px-12 py-5 rounded-2xl shadow-2xl text-sm transition-all uppercase tracking-wider">
+                    VERİ KOVANINI YÜKLE / 上传数据
                 </label>
+                <div class="mt-4 flex gap-4 text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Pekin (UTC+8)</span>
+                    <span class="text-white">➔</span>
+                    <span>TR (UTC+3)</span>
+                </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">Toplam Kesinti</p><h2 id="kpiPenalty" class="text-3xl font-black text-amber-400">$0</h2></div>
-            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">İhlal Sayısı</p><h2 id="kpiViolations" class="text-3xl font-black text-white">0</h2></div>
-            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">En Düşük Verim</p><h2 id="kpiLowPerf" class="text-3xl font-black text-red-500">-</h2></div>
-            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">Analiz Edilen Gün</p><h2 id="kpiDays" class="text-3xl font-black text-white">0</h2></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-cyan-500">
+                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Net Kesinti / 扣款</p>
+                <h2 id="kpiFine" class="text-5xl font-black text-cyan-400">$0</h2>
+            </div>
+            <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-amber-400">
+                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Toplam İhlal / 违规次数</p>
+                <h2 id="kpiViol" class="text-5xl font-black text-amber-400">0</h2>
+            </div>
+            <div class="glass p-8 rounded-[2rem] text-center">
+                <p class="text-xs font-bold text-slate-500 uppercase mb-2">Verimlilik / 效率</p>
+                <h2 id="kpiEff" class="text-5xl font-black text-white">%0</h2>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <div class="lg:col-span-2 card overflow-hidden">
-                <div class="p-5 bg-white/5 font-bold text-xs uppercase tracking-widest text-slate-400">Maaş & Performans Özeti</div>
-                <table class="w-full text-left border-collapse">
-                    <thead class="text-[10px] text-slate-500 uppercase">
-                        <tr class="border-b border-white/5">
-                            <th class="p-4">Personel</th>
-                            <th class="p-4 text-center">İşlem Hacmi</th>
-                            <th class="p-4 text-center">İhlal (G/E)</th>
-                            <th class="p-4 text-right">Maaş Etkisi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summaryBody" class="text-sm">
+            <div class="lg:col-span-2 glass rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <div class="p-6 bg-white/5 flex justify-between items-center border-b border-white/5">
+                    <h3 class="font-bold text-sm tracking-widest text-slate-400 uppercase">Maaş & Vardiya Cetveli</h3>
+                    <span class="text-[10px] text-cyan-500 font-black">ACTIVE AUDIT</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-black/20 text-[10px] uppercase font-bold text-slate-500">
+                            <tr>
+                                <th class="p-6">CS / 姓名</th>
+                                <th class="p-6">TR Vardiya</th>
+                                <th class="p-6 text-center">İhlal (G/E)</th>
+                                <th class="p-6 text-right">Kesinti / 罚金</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yaverBody" class="text-sm divide-y divide-white/5">
+                            <tr><td colspan="4" class="p-20 text-center text-slate-600 italic tracking-widest uppercase">Veri Akışı Bekleniyor...</td></tr>
                         </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
 
-            <div class="card flex flex-col h-[500px]">
-                <div class="p-5 bg-white/5 font-bold text-xs uppercase tracking-widest text-amber-500 flex justify-between">
-                    <span>İhlal Kanıt Logları</span>
-                    <span class="text-[9px] text-slate-500 italic">Son 50 kayıt</span>
+            <div class="glass rounded-[2.5rem] flex flex-col h-[550px] shadow-2xl">
+                <div class="p-6 bg-white/5 border-b border-white/5">
+                    <h3 class="font-bold text-sm tracking-widest text-amber-500 uppercase">İhlal Kanıtları / 证据</h3>
                 </div>
-                <div id="logContainer" class="overflow-y-auto flex-1 p-4 space-y-2">
-                    <p class="text-slate-600 text-xs text-center mt-10 italic">Analiz için dosya yükleyin.</p>
-                </div>
+                <div id="logBox" class="flex-1 overflow-y-auto p-4 space-y-3 log-scroll">
+                    </div>
             </div>
 
         </div>
@@ -76,13 +104,13 @@
 
     <script>
         const SHIFTS = {
-            'Derin': { start: 8, end: 14 },
-            'Deniz': { start: 14, end: 20 },
-            'Dilan': { start: 20, end: 2 },
-            'Çiğdem': { start: 20, end: 2 }
+            'Derin': { start: 8, end: 14, label: '08:00 - 14:00' },
+            'Deniz': { start: 14, end: 20, label: '14:00 - 20:00' },
+            'Dilan': { start: 20, end: 2, label: '20:00 - 02:00' },
+            'Çiğdem': { start: 20, end: 2, label: '20:00 - 02:00' }
         };
 
-        document.getElementById('fileIn').addEventListener('change', function(e) {
+        document.getElementById('yaverInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (evt) => {
@@ -94,118 +122,112 @@
                     const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
                     json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 }
-                audit(json);
+                yaverAudit(json);
             };
             reader.readAsArrayBuffer(file);
         });
 
-        function audit(data) {
+        function yaverAudit(data) {
             const results = {};
             const logs = [];
-            const days = new Set();
+            const clean = data.filter(d => d.客服昵称 && SHIFTS[d.客服昵称]);
 
-            data.forEach(row => {
+            clean.forEach(row => {
                 const name = row.客服昵称;
-                if (!SHIFTS[name]) return;
-                if (!results[name]) results[name] = { late: 0, early: 0, vol: 0, name: name };
+                if (!results[name]) results[name] = { late: 0, early: 0, vol: 0 };
 
-                // Güvenli Tarih Ayrıştırma (Pekin -> TR)
-                const loginTR = parsePekingToTR(row.客服上线时间);
-                const logoutTR = parsePekingToTR(row.客服下线时间);
-                days.add(row.日期);
-
+                // PEKİN -> TR SAAT DÖNÜŞÜMÜ (GÜVENLİ PARSE)
+                const trLogin = convertToTR(row.客服上线时间);
+                const trLogout = convertToTR(row.客服下线时间);
+                
                 const s = SHIFTS[name];
-                const hIn = loginTR.getHours();
-                const mIn = loginTR.getMinutes();
-                const hOut = logoutTR.getHours();
-                const mOut = logoutTR.getMinutes();
+                const hIn = trLogin.getHours();
+                const mIn = trLogin.getMinutes();
+                const hOut = trLogout.getHours();
+                const mOut = trLogout.getMinutes();
 
-                // Geç Kalma Denetimi
+                // Geç Kalma Denetimi (10dk tolerans)
                 if (hIn > s.start || (hIn === s.start && mIn > 10)) {
-                    if (!(s.start === 20 && hIn < 5)) { // Gece vardiyası koruması
+                    // Gece vardiyası (20:00) için sabah 5'ten önceki girişleri yanlış geç kalma sayma
+                    if (!(s.start === 20 && hIn < 10)) {
                         results[name].late++;
-                        logs.push({ name, type: 'GEÇ', time: formatTime(loginTR), date: row.日期 });
+                        logs.push({ name, type: 'GEÇ KALMA', time: format(trLogin), date: row.日期 });
                     }
                 }
 
                 // Erken Çıkış Denetimi
-                let isEarly = false;
-                if (s.end === 2) {
+                let earlyOut = false;
+                if (s.end === 2) { // Dilan & Çiğdem
                     if (hOut < 2 || hOut >= 20) {
                         if (hOut < 2 && (hOut > 0 || mOut < 55)) {
-                            if (hOut === 1 && mOut < 55) isEarly = true;
-                            else if (hOut === 0) isEarly = true;
-                        } else if (hOut >= 20) isEarly = true;
-                    }
+                            if (hOut === 1 && mOut < 55) earlyOut = true;
+                            else if (hOut === 0) earlyOut = true;
+                        } else if (hOut >= 20 && hOut < 23) earlyOut = true;
+                    } else earlyOut = true;
                 } else {
-                    if (hOut < s.end) isEarly = true;
+                    if (hOut < s.end) earlyOut = true;
                 }
 
-                if (isEarly) {
+                if (earlyOut) {
                     results[name].early++;
-                    logs.push({ name, type: 'ERKEN', time: formatTime(logoutTR), date: row.日期 });
+                    logs.push({ name, type: 'ERKEN ÇIKIŞ', time: format(trLogout), date: row.日期 });
                 }
 
                 results[name].vol += (Number(row.客服处理量) || 0);
             });
 
-            renderAuditor(results, logs, days.size);
+            renderYaver(results, logs);
         }
 
-        function parsePekingToTR(dateStr) {
-            // "2026-02-27 01:39:00" formatını manuel parçala
-            const parts = dateStr.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
-            if (!parts) return new Date();
-            // Peking saatiyle yarat
-            const d = new Date(parts[1], parts[2]-1, parts[3], parts[4], parts[5], parts[6]);
-            // 5 saat çıkar
-            return new Date(d.getTime() - (5 * 60 * 60 * 1000));
+        function convertToTR(str) {
+            const p = str.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
+            if(!p) return new Date();
+            const pek = new Date(p[1], p[2]-1, p[3], p[4], p[5], p[6]);
+            return new Date(pek.getTime() - (5 * 60 * 60 * 1000));
         }
 
-        function formatTime(d) {
-            return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0');
-        }
+        function format(d) { return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0'); }
 
-        function renderAuditor(res, logs, days) {
-            const tbody = document.getElementById('summaryBody');
-            const logBox = document.getElementById('logContainer');
+        function renderYaver(res, logs) {
+            const tbody = document.getElementById('yaverBody');
+            const logBox = document.getElementById('logBox');
             tbody.innerHTML = ''; logBox.innerHTML = '';
             
-            let totalP = 0, totalV = 0;
+            let totalFine = 0, totalV = 0;
 
-            Object.values(res).forEach(r => {
-                const vio = r.late + r.early;
-                const penalty = vio > 4 ? vio * 20 : 0;
-                totalP += penalty; totalV += vio;
+            Object.keys(res).forEach(name => {
+                const r = res[name];
+                const viol = r.late + r.early;
+                const fine = viol > 4 ? viol * 20 : 0;
+                totalFine += fine; totalV += viol;
 
                 tbody.innerHTML += `
-                    <tr class="border-b border-white/5 hover:bg-white/[0.02]">
-                        <td class="p-4 font-bold">${r.name}</td>
-                        <td class="p-4 text-center text-slate-400 font-mono">${r.vol}</td>
-                        <td class="p-4 text-center">
-                            <span class="text-red-400">${r.late}G</span> / <span class="text-orange-400">${r.early}E</span>
+                    <tr class="hover:bg-white/[0.02] transition-colors">
+                        <td class="p-6 font-bold text-white">${name}</td>
+                        <td class="p-6 text-slate-500 font-medium italic">${SHIFTS[name].label}</td>
+                        <td class="p-6 text-center">
+                            <span class="text-red-400 font-bold">${r.late}G</span> / <span class="text-orange-400 font-bold">${r.early}E</span>
                         </td>
-                        <td class="p-4 text-right font-black ${penalty > 0 ? 'text-red-500' : 'text-green-500'}">
-                            ${penalty > 0 ? '-$'+penalty : '$0'}
+                        <td class="p-6 text-right font-black ${fine > 0 ? 'text-red-500' : 'text-emerald-500'}">
+                            ${fine > 0 ? '-$'+fine : '$0'}
                         </td>
                     </tr>
                 `;
             });
 
-            logs.reverse().slice(0, 50).forEach(l => {
+            logs.reverse().forEach(l => {
+                const cls = l.type === 'GEÇ KALMA' ? 'violation-late' : 'violation-early';
                 logBox.innerHTML += `
-                    <div class="log-row py-2 flex justify-between items-center">
-                        <span class="font-bold text-slate-300">${l.name}</span>
-                        <span class="violation-tag ${l.type === 'GEÇ' ? 'late-tag' : 'early-tag'}">${l.type}</span>
-                        <span class="text-slate-500">${l.date} | ${l.time}</span>
+                    <div class="glass p-4 rounded-xl text-[10px] ${cls}">
+                        <div class="flex justify-between font-bold mb-1"><span>${l.name}</span><span>${l.type}</span></div>
+                        <div class="text-slate-500">${l.date} | TR SAATİ: ${l.time}</div>
                     </div>
                 `;
             });
 
-            document.getElementById('kpiPenalty').innerText = '$' + totalP;
-            document.getElementById('kpiViolations').innerText = totalV;
-            document.getElementById('kpiDays').innerText = days;
-            document.getElementById('kpiLowPerf').innerText = Object.values(res).sort((a,b) => b.late+b.early - (a.late+a.early))[0].name;
+            document.getElementById('kpiFine').innerText = '$' + totalFine;
+            document.getElementById('kpiViol').innerText = totalV;
+            document.getElementById('kpiEff').innerText = '%' + (100 - (totalV * 0.5)).toFixed(1);
         }
     </script>
 </body>
