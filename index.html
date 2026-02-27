@@ -3,195 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hive | CS Analytics (TR/CN)</title>
+    <title>Hive v7 | The Auditor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Noto+Sans+SC:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --honey-yellow: #FFD700;
-            --deep-black: #0F0F0F;
-        }
-        body { 
-            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; 
-            background-color: var(--deep-black); 
-            color: white;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg id='hexagons' fill='%231a1a1a' fill-opacity='0.4' fill-rule='nonzero'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9l10.99-6.35L25 17.9v12.7L13.99 36.95 3 30.6V17.9z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        .bee-title { font-family: 'Syne', sans-serif; text-transform: uppercase; }
-        .glass-card { 
-            background: rgba(26, 26, 26, 0.9); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255, 215, 0, 0.1); 
-            border-radius: 4px; /* Mimari sert hatlar */
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover { border-color: var(--honey-yellow); }
-        .stat-value { color: var(--honey-yellow); font-weight: 800; }
-        .btn-bee {
-            background-color: var(--honey-yellow);
-            color: black;
-            font-weight: 800;
-            transition: all 0.3s ease;
-        }
-        .btn-bee:hover { background-color: white; box-shadow: 0 0 20px var(--honey-yellow); }
-        .lang-switch { font-size: 0.7rem; letter-spacing: 2px; color: #666; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .card { background: #1e293b; border: 1px solid rgba(255,255,255,0.05); border-radius: 1.5rem; }
+        .btn-yellow { background: #fbbf24; color: #000; font-weight: 700; transition: 0.2s; }
+        .btn-yellow:hover { background: #fff; transform: scale(1.02); }
+        .log-row { font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .violation-tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.65rem; }
+        .late-tag { background: #7f1d1d; color: #fca5a5; }
+        .early-tag { background: #7c2d12; color: #fdba74; }
     </style>
 </head>
-<body class="p-6 md:p-12">
+<body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-start mb-16">
+        <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 border-b border-white/5 pb-8">
             <div>
-                <div class="flex space-x-4 mb-4 lang-switch uppercase font-bold">
-                    <span class="text-yellow-500">TR / Türkçe</span>
-                    <span>CN / 中文</span>
-                </div>
-                <h1 class="bee-title text-5xl md:text-7xl leading-none">THE <span class="text-yellow-400">HIVE</span></h1>
-                <h2 class="text-xl md:text-2xl font-light text-gray-500 mt-2 uppercase tracking-tighter">蜂巢分析系统 / Kovan Analitik Sistemi</h2>
+                <h1 class="text-4xl font-extrabold text-white tracking-tighter">HIVE <span class="text-amber-400">AUDITOR</span></h1>
+                <p class="text-slate-400 text-sm mt-1 uppercase tracking-widest font-semibold">Pekin ➔ Türkiye Saat Dönüşümü & Şeffaf Ceza Takibi</p>
             </div>
-            
-            <div class="mt-8 md:mt-0">
-                <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" class="hidden">
-                <label for="fileInput" class="btn-bee cursor-pointer px-8 py-4 flex flex-col items-center">
-                    <span class="text-sm">VERİ YÜKLE / 上传数据</span>
-                    <span class="text-[10px] opacity-70">XLSX, CSV</span>
+            <div class="flex flex-col items-end gap-3">
+                <input type="file" id="fileIn" accept=".csv, .xlsx" class="hidden">
+                <label for="fileIn" class="btn-yellow cursor-pointer px-8 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+                    <span>VERİ ANALİZİNİ BAŞLAT</span>
                 </label>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-            <div class="glass-card p-6 border-l-4 border-yellow-500">
-                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Hacim / 处理量</p>
-                <h3 id="totalHandled" class="stat-value text-4xl mt-2">0</h3>
-            </div>
-            <div class="glass-card p-6 border-l-4 border-yellow-500">
-                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Hız / 响应速度</p>
-                <h3 id="avgRes" class="stat-value text-4xl mt-2">0<span class="text-lg">s</span></h3>
-            </div>
-            <div class="glass-card p-6 border-l-4 border-white">
-                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Kayıp / 自动关闭</p>
-                <h3 id="lost" class="stat-value text-4xl mt-2 text-white">0</h3>
-            </div>
-            <div class="glass-card p-6 border-l-4 border-yellow-500">
-                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Başarı / 解决率</p>
-                <h3 id="rate" class="stat-value text-4xl mt-2">%0</h3>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">Toplam Kesinti</p><h2 id="kpiPenalty" class="text-3xl font-black text-amber-400">$0</h2></div>
+            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">İhlal Sayısı</p><h2 id="kpiViolations" class="text-3xl font-black text-white">0</h2></div>
+            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">En Düşük Verim</p><h2 id="kpiLowPerf" class="text-3xl font-black text-red-500">-</h2></div>
+            <div class="card p-6"><p class="text-[10px] text-slate-500 uppercase font-bold">Analiz Edilen Gün</p><h2 id="kpiDays" class="text-3xl font-black text-white">0</h2></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-            <div class="lg:col-span-2 glass-card p-8">
-                <h4 class="text-sm font-bold mb-8 uppercase tracking-widest text-yellow-500">Team Architecture / 团队架构</h4>
-                <div class="h-[300px]">
-                    <canvas id="mainChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 card overflow-hidden">
+                <div class="p-5 bg-white/5 font-bold text-xs uppercase tracking-widest text-slate-400">Maaş & Performans Özeti</div>
+                <table class="w-full text-left border-collapse">
+                    <thead class="text-[10px] text-slate-500 uppercase">
+                        <tr class="border-b border-white/5">
+                            <th class="p-4">Personel</th>
+                            <th class="p-4 text-center">İşlem Hacmi</th>
+                            <th class="p-4 text-center">İhlal (G/E)</th>
+                            <th class="p-4 text-right">Maaş Etkisi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody" class="text-sm">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="card flex flex-col h-[500px]">
+                <div class="p-5 bg-white/5 font-bold text-xs uppercase tracking-widest text-amber-500 flex justify-between">
+                    <span>İhlal Kanıt Logları</span>
+                    <span class="text-[9px] text-slate-500 italic">Son 50 kayıt</span>
+                </div>
+                <div id="logContainer" class="overflow-y-auto flex-1 p-4 space-y-2">
+                    <p class="text-slate-600 text-xs text-center mt-10 italic">Analiz için dosya yükleyin.</p>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-4">
-                <div class="glass-card p-6">
-                    <h5 class="text-xs font-bold text-blue-400 mb-3 uppercase">💻 Dev Log / 开发日志</h5>
-                    <p id="devNote" class="text-xs text-gray-400 font-mono leading-relaxed">
-                        Sistem beklemede... / 系统就绪，等待数据...
-                    </p>
-                </div>
-                <div class="glass-card p-6 border-t-2 border-yellow-900">
-                    <h5 class="text-xs font-bold text-yellow-600 mb-3 uppercase">🏛️ Architect / 建筑师</h5>
-                    <p id="archNote" class="text-xs text-gray-400 leading-relaxed italic">
-                        Yapısal analiz için veri bekleniyor. / 等待数据进行结构分析。
-                    </p>
-                </div>
-            </div>
         </div>
-
-        <footer class="text-center text-gray-800 text-[9px] uppercase tracking-[1em] py-8 border-t border-yellow-900/20">
-            Hive Performance Logic &bull; 蜂巢逻辑
-        </footer>
     </div>
 
     <script>
-        let chartInstance;
+        const SHIFTS = {
+            'Derin': { start: 8, end: 14 },
+            'Deniz': { start: 14, end: 20 },
+            'Dilan': { start: 20, end: 2 },
+            'Çiğdem': { start: 20, end: 2 }
+        };
 
-        document.getElementById('fileInput').addEventListener('change', function(e) {
+        document.getElementById('fileIn').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.name.endsWith('.csv')) {
-                Papa.parse(file, {
-                    header: true,
-                    dynamicTyping: true,
-                    complete: function(r) { process(r.data); }
-                });
-            } else {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const data = new Uint8Array(evt.target.result);
-                    const wb = XLSX.read(data, {type: 'array'});
-                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    process(json);
-                };
-                reader.readAsArrayBuffer(file);
-            }
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                let json;
+                if(file.name.endsWith('.csv')) {
+                    const text = new TextDecoder('utf-8').decode(evt.target.result);
+                    json = Papa.parse(text, {header:true, dynamicTyping:true}).data;
+                } else {
+                    const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
+                    json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                }
+                audit(json);
+            };
+            reader.readAsArrayBuffer(file);
         });
 
-        function process(rawData) {
-            const data = rawData.filter(d => d.客服昵称);
-            const stats = {
-                total: data.reduce((a, b) => a + (Number(b.客服处理量) || 0), 0),
-                res: data.reduce((a, b) => a + (Number(b.客服平均响应时长) || 0), 0) / data.length,
-                lost: data.reduce((a, b) => a + (Number(b.自动关闭量) || 0), 0),
-                map: {}
-            };
+        function audit(data) {
+            const results = {};
+            const logs = [];
+            const days = new Set();
 
-            data.forEach(d => {
-                stats.map[d.客服昵称] = (stats.map[d.客服昵称] || 0) + (Number(d.客服处理量) || 0);
-            });
+            data.forEach(row => {
+                const name = row.客服昵称;
+                if (!SHIFTS[name]) return;
+                if (!results[name]) results[name] = { late: 0, early: 0, vol: 0, name: name };
 
-            // UI Update
-            document.getElementById('totalHandled').innerText = stats.total.toLocaleString();
-            document.getElementById('avgRes').innerHTML = `${Math.round(stats.res)}<span class="text-lg">s</span>`;
-            document.getElementById('lost').innerText = stats.lost.toLocaleString();
-            document.getElementById('rate').innerText = `%${(stats.total > 0 ? ((stats.total - stats.lost) / stats.total * 100).toFixed(1) : 0)}`;
+                // Güvenli Tarih Ayrıştırma (Pekin -> TR)
+                const loginTR = parsePekingToTR(row.客服上线时间);
+                const logoutTR = parsePekingToTR(row.客服下线时间);
+                days.add(row.日期);
 
-            updateChart(stats.map);
-            updateInsights(stats);
-        }
+                const s = SHIFTS[name];
+                const hIn = loginTR.getHours();
+                const mIn = loginTR.getMinutes();
+                const hOut = logoutTR.getHours();
+                const mOut = logoutTR.getMinutes();
 
-        function updateChart(map) {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(map),
-                    datasets: [{
-                        label: 'Hacim / 量',
-                        data: Object.values(map),
-                        backgroundColor: '#FFD700',
-                        barThickness: 20
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#444' } },
-                        x: { grid: { display: false }, ticks: { color: '#FFD700' } }
+                // Geç Kalma Denetimi
+                if (hIn > s.start || (hIn === s.start && mIn > 10)) {
+                    if (!(s.start === 20 && hIn < 5)) { // Gece vardiyası koruması
+                        results[name].late++;
+                        logs.push({ name, type: 'GEÇ', time: formatTime(loginTR), date: row.日期 });
                     }
                 }
+
+                // Erken Çıkış Denetimi
+                let isEarly = false;
+                if (s.end === 2) {
+                    if (hOut < 2 || hOut >= 20) {
+                        if (hOut < 2 && (hOut > 0 || mOut < 55)) {
+                            if (hOut === 1 && mOut < 55) isEarly = true;
+                            else if (hOut === 0) isEarly = true;
+                        } else if (hOut >= 20) isEarly = true;
+                    }
+                } else {
+                    if (hOut < s.end) isEarly = true;
+                }
+
+                if (isEarly) {
+                    results[name].early++;
+                    logs.push({ name, type: 'ERKEN', time: formatTime(logoutTR), date: row.日期 });
+                }
+
+                results[name].vol += (Number(row.客服处理量) || 0);
             });
+
+            renderAuditor(results, logs, days.size);
         }
 
-        function updateInsights(s) {
-            const loss = (s.lost/s.total*100).toFixed(1);
-            document.getElementById('devNote').innerText = `[LOG] ${s.total} processed. Loss: %${loss}. 
-            系统中处理了 ${s.total} 条数据。数据丢失率: %${loss}。`;
+        function parsePekingToTR(dateStr) {
+            // "2026-02-27 01:39:00" formatını manuel parçala
+            const parts = dateStr.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
+            if (!parts) return new Date();
+            // Peking saatiyle yarat
+            const d = new Date(parts[1], parts[2]-1, parts[3], parts[4], parts[5], parts[6]);
+            // 5 saat çıkar
+            return new Date(d.getTime() - (5 * 60 * 60 * 1000));
+        }
+
+        function formatTime(d) {
+            return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0');
+        }
+
+        function renderAuditor(res, logs, days) {
+            const tbody = document.getElementById('summaryBody');
+            const logBox = document.getElementById('logContainer');
+            tbody.innerHTML = ''; logBox.innerHTML = '';
             
-            document.getElementById('archNote').innerText = `Mimari: %${loss} kayıp oranı, kovanın yalıtım problemidir. 
-            建筑分析: %${loss} 的自动关闭率表明蜂巢的密封性存在问题。`;
+            let totalP = 0, totalV = 0;
+
+            Object.values(res).forEach(r => {
+                const vio = r.late + r.early;
+                const penalty = vio > 4 ? vio * 20 : 0;
+                totalP += penalty; totalV += vio;
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-white/5 hover:bg-white/[0.02]">
+                        <td class="p-4 font-bold">${r.name}</td>
+                        <td class="p-4 text-center text-slate-400 font-mono">${r.vol}</td>
+                        <td class="p-4 text-center">
+                            <span class="text-red-400">${r.late}G</span> / <span class="text-orange-400">${r.early}E</span>
+                        </td>
+                        <td class="p-4 text-right font-black ${penalty > 0 ? 'text-red-500' : 'text-green-500'}">
+                            ${penalty > 0 ? '-$'+penalty : '$0'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            logs.reverse().slice(0, 50).forEach(l => {
+                logBox.innerHTML += `
+                    <div class="log-row py-2 flex justify-between items-center">
+                        <span class="font-bold text-slate-300">${l.name}</span>
+                        <span class="violation-tag ${l.type === 'GEÇ' ? 'late-tag' : 'early-tag'}">${l.type}</span>
+                        <span class="text-slate-500">${l.date} | ${l.time}</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('kpiPenalty').innerText = '$' + totalP;
+            document.getElementById('kpiViolations').innerText = totalV;
+            document.getElementById('kpiDays').innerText = days;
+            document.getElementById('kpiLowPerf').innerText = Object.values(res).sort((a,b) => b.late+b.early - (a.late+a.early))[0].name;
         }
     </script>
 </body>
