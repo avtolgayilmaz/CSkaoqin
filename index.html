@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YAVER v12 | CS Attendance Auditor</title>
+    <title>YAVER v18 | CS Attendance Auditor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -37,15 +37,16 @@
                 <h1 class="logo-font text-5xl md:text-6xl tracking-tighter">
                     <span style="color: var(--ya-turq);">YA</span><span style="color: var(--ver-yellow);">VER</span>
                 </h1>
-                <p class="text-xs font-bold tracking-[0.35em] text-slate-500 mt-2 uppercase italic">CS 考勤记录分析 | Vardiya ve Performans</p>
+                <p class="text-xs font-bold tracking-[0.35em] text-slate-500 mt-2 uppercase italic">CS 考勤记录分析 | Planlanan TSİ Vardiya ve Gerçek Giriş</p>
                 <p class="text-xs text-slate-500 mt-3">Excel formatı: 日期 / 客服昵称 / 客服上线时间 / 客服下线时间 / 客服在线时长 / 客服处理量 / 客服回复量</p>
+                <p class="text-xs text-amber-400 mt-2 font-bold">Saat kuralı: Excel'de 18:00 görünüyorsa sistem bunu 08:00 TSİ kabul eder.</p>
             </div>
             <div class="flex flex-col items-center">
                 <input type="file" id="uploadInput" accept=".csv, .xlsx, .xls" class="hidden">
                 <label for="uploadInput" class="btn-yaver cursor-pointer px-10 py-4 rounded-xl shadow-2xl transition-all hover:scale-105 uppercase text-sm">
                     CS KAYDI YÜKLE / 上传考勤
                 </label>
-                <span class="text-[10px] mt-2 text-slate-500 font-bold">Pekin UTC+8 saatini Türkiye UTC+3 saatine çevirir.</span>
+                <span class="text-[10px] mt-2 text-slate-500 font-bold">Excel'de görünen saatten 10 saat çıkarılır; örnek 18:00 → 08:00 TSİ kabul edilir.</span>
             </div>
         </header>
 
@@ -133,8 +134,9 @@
                             <thead>
                                 <tr class="text-slate-500 border-b border-white/5">
                                     <th class="p-3 uppercase">Tarih</th>
-                                    <th class="p-3 uppercase">Giriş TR</th>
-                                    <th class="p-3 uppercase">Çıkış TR</th>
+                                    <th class="p-3 uppercase">Planlanan TSİ</th>
+                                    <th class="p-3 uppercase">Giriş TSİ</th>
+                                    <th class="p-3 uppercase">Çıkış TSİ</th>
                                     <th class="p-3 uppercase">Online</th>
                                     <th class="p-3 uppercase">İşlem</th>
                                     <th class="p-3 uppercase">Yanıt</th>
@@ -161,6 +163,14 @@
             'Dilan': { start: '20:00', end: '02:00', label: '20:00 - 02:00' },
             'Çiğdem': { start: '20:00', end: '02:00', label: '20:00 - 02:00' }
         };
+
+        /*
+          Kullanıcının dosya okuma gerçekliğine göre özel kural:
+          Excel'de görünen saatten 10 saat çıkarılır.
+          Örnek: 18:00 -> 08:00, 19:00 -> 09:00, 01:00 -> 15:00 bir önceki gün.
+          Bu standart Beijing -> TSİ dönüşümü değildir; dosyadaki saat kaymasını düzeltmek için uygulanır.
+        */
+        const EXCEL_TO_TSI_OFFSET_HOURS = -10;
 
         const FIELD_ALIASES = {
             date: ['日期'],
@@ -197,7 +207,7 @@
                     const text = new TextDecoder('utf-8').decode(evt.target.result);
                     json = Papa.parse(text, { header: true, dynamicTyping: false, skipEmptyLines: true }).data;
                 } else {
-                    const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: false });
+                    const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: false, raw: true });
                     const ws = wb.Sheets[wb.SheetNames[0]];
                     json = XLSX.utils.sheet_to_json(ws, { defval: '' });
                 }
@@ -246,27 +256,66 @@
         }
 
         function parseBeijingTime(value) {
-            if (!value || value === '暂未下线') return null;
+            if (value === null || value === undefined || value === '' || value === '暂未下线') return null;
+
+            let parts = null;
 
             if (value instanceof Date && !isNaN(value)) {
-                return new Date(value.getTime() - 5 * 60 * 60 * 1000);
+                // Normalde artık buraya düşmemeli. Excel tarihleri ham serial number olarak okunur.
+                // Yine de Date gelirse tarayıcının lokal saat etkisini azaltmak için UTC parçaları alınır.
+                parts = {
+                    y: value.getUTCFullYear(),
+                    m: value.getUTCMonth() + 1,
+                    d: value.getUTCDate(),
+                    h: value.getUTCHours(),
+                    min: value.getUTCMinutes(),
+                    s: value.getUTCSeconds()
+                };
+            } else if (typeof value === 'number') {
+                const parsed = XLSX.SSF.parse_date_code(value);
+                if (parsed) {
+                    parts = {
+                        y: parsed.y,
+                        m: parsed.m,
+                        d: parsed.d,
+                        h: parsed.H || 0,
+                        min: parsed.M || 0,
+                        s: Math.floor(parsed.S || 0)
+                    };
+                }
+            } else {
+                const str = String(value).trim();
+
+                const p1 = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+                const p2 = str.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+
+                if (p1) {
+                    parts = {
+                        y: Number(p1[1]),
+                        m: Number(p1[2]),
+                        d: Number(p1[3]),
+                        h: Number(p1[4]),
+                        min: Number(p1[5]),
+                        s: Number(p1[6] || 0)
+                    };
+                } else if (p2) {
+                    parts = {
+                        y: Number(p2[3]),
+                        m: Number(p2[2]),
+                        d: Number(p2[1]),
+                        h: Number(p2[4]),
+                        min: Number(p2[5]),
+                        s: Number(p2[6] || 0)
+                    };
+                }
             }
 
-            const str = String(value).trim();
-            const p = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+            if (!parts) return null;
 
-            if (!p) return null;
+            const beijingUtcMs = Date.UTC(parts.y, parts.m - 1, parts.d, parts.h, parts.min, parts.s);
+            const turkeyUtcMs = beijingUtcMs + EXCEL_TO_TSI_OFFSET_HOURS * 60 * 60 * 1000;
 
-            const beijingDate = new Date(
-                Number(p[1]),
-                Number(p[2]) - 1,
-                Number(p[3]),
-                Number(p[4]),
-                Number(p[5]),
-                Number(p[6])
-            );
-
-            return new Date(beijingDate.getTime() - 5 * 60 * 60 * 1000);
+            return new Date(turkeyUtcMs);
         }
 
         function normalizeDate(value) {
@@ -287,9 +336,15 @@
 
         function dateAtTime(baseDate, time) {
             const [h, m] = time.split(':').map(Number);
-            const d = new Date(baseDate);
-            d.setHours(h, m, 0, 0);
-            return d;
+            return new Date(Date.UTC(
+                baseDate.getUTCFullYear(),
+                baseDate.getUTCMonth(),
+                baseDate.getUTCDate(),
+                h,
+                m,
+                0,
+                0
+            ));
         }
 
         function shiftWindowForLogin(login, shift) {
@@ -297,14 +352,14 @@
             let end = dateAtTime(login, shift.end);
 
             if (timeToMinutes(shift.end) <= timeToMinutes(shift.start)) {
-                end.setDate(end.getDate() + 1);
+                end.setUTCDate(end.getUTCDate() + 1);
             }
 
             if (login < start && timeToMinutes(shift.end) <= timeToMinutes(shift.start)) {
                 const previousStart = new Date(start);
-                previousStart.setDate(previousStart.getDate() - 1);
+                previousStart.setUTCDate(previousStart.getUTCDate() - 1);
                 const previousEnd = new Date(end);
-                previousEnd.setDate(previousEnd.getDate() - 1);
+                previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
 
                 if (login <= previousEnd) {
                     return { start: previousStart, end: previousEnd };
@@ -316,7 +371,12 @@
 
         function formatTime(d) {
             if (!d) return 'AÇIK';
-            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        }
+
+        function formatDateTR(d) {
+            if (!d) return '';
+            return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
         }
 
         function formatDuration(seconds) {
@@ -337,37 +397,58 @@
                     late: false,
                     early: false,
                     open: !row.logoutTR,
+                    lateMinutes: 0,
+                    earlyMinutes: 0,
                     label: 'DENETİM DIŞI',
-                    className: 'neutral'
+                    className: 'neutral',
+                    shiftStart: null,
+                    shiftEnd: null
                 };
             }
 
             const win = shiftWindowForLogin(row.loginTR, shift);
+
+            /*
+              Net kural:
+              - Excel saati Beijing kabul edilir.
+              - loginTR/logoutTR ekrana TSİ olarak basılır.
+              - Karşılaştırma planlanan TSİ vardiyaya göre yapılır.
+              - 10 dk geç kalma toleransı, 5 dk erken çıkış toleransı vardır.
+            */
             const lateLimit = new Date(win.start.getTime() + 10 * 60 * 1000);
             const earlyLimit = new Date(win.end.getTime() - 5 * 60 * 1000);
 
+            const lateMinutesRaw = Math.floor((row.loginTR.getTime() - win.start.getTime()) / 60000);
+            const lateMinutes = Math.max(0, lateMinutesRaw);
             const late = row.loginTR > lateLimit;
+
             const open = !row.logoutTR;
-            const early = row.logoutTR ? row.logoutTR < earlyLimit : false;
+
+            let earlyMinutes = 0;
+            let early = false;
+            if (row.logoutTR) {
+                earlyMinutes = Math.max(0, Math.floor((win.end.getTime() - row.logoutTR.getTime()) / 60000));
+                early = row.logoutTR < earlyLimit;
+            }
 
             let label = 'NORMAL';
             let className = 'ok';
 
             if (open) {
-                label = late ? 'GEÇ + AÇIK' : 'AÇIK KAYIT';
+                label = late ? `GEÇ ${lateMinutes} DK + AÇIK` : 'AÇIK KAYIT';
                 className = late ? 'bad' : 'warn';
             } else if (late && early) {
-                label = 'GEÇ + ERKEN';
+                label = `GEÇ ${lateMinutes} DK + ERKEN ${earlyMinutes} DK`;
                 className = 'bad';
             } else if (late) {
-                label = 'GEÇ';
+                label = `GEÇ ${lateMinutes} DK`;
                 className = 'bad';
             } else if (early) {
-                label = 'ERKEN';
+                label = `ERKEN ${earlyMinutes} DK`;
                 className = 'bad';
             }
 
-            return { late, early, open, label, className, shiftStart: win.start, shiftEnd: win.end };
+            return { late, early, open, lateMinutes, earlyMinutes, label, className, shiftStart: win.start, shiftEnd: win.end };
         }
 
         function processProfiles(data) {
@@ -377,6 +458,8 @@
                     const mapped = {
                         date: normalizeDate(getVal(row, 'date')),
                         name: String(getVal(row, 'name')).trim(),
+                        rawLogin: getVal(row, 'login'),
+                        rawLogout: getVal(row, 'logout'),
                         loginTR: parseBeijingTime(getVal(row, 'login')),
                         logoutTR: parseBeijingTime(getVal(row, 'logout')),
                         onlineSeconds: parseDurationSeconds(getVal(row, 'online')),
@@ -508,9 +591,10 @@
                 rows.slice().reverse().forEach(row => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="p-3 text-slate-400">${row.date}</td>
-                        <td class="p-3 font-bold">${formatTime(row.loginTR)}</td>
-                        <td class="p-3 font-bold">${formatTime(row.logoutTR)}</td>
+                        <td class="p-3 text-slate-400">${formatDateTR(row.loginTR) || row.date}</td>
+                        <td class="p-3 font-bold text-cyan-300">${formatTime(row.attendance.shiftStart)} - ${formatTime(row.attendance.shiftEnd)}</td>
+                        <td class="p-3 font-bold" title="Excel ham saat: ${row.rawLogin}">${formatTime(row.loginTR)}</td>
+                        <td class="p-3 font-bold" title="Excel ham saat: ${row.rawLogout || '暂未下线'}">${formatTime(row.logoutTR)}</td>
                         <td class="p-3 text-slate-300">${formatDuration(row.onlineSeconds)}</td>
                         <td class="p-3 text-slate-300">${row.volume}</td>
                         <td class="p-3 text-slate-300">${row.replies}</td>
