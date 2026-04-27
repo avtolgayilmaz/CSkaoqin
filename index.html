@@ -3,49 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YAVER v9 | Profiles & Auditor</title>
+    <title>YAVER v12 | CS Attendance Auditor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Lexend+Exa:wght@800&family=Noto+Sans+SC:wght@500&display=swap" rel="stylesheet">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Lexend+Exa:wght@800&family=Noto+Sans+SC:wght@500;700&display=swap" rel="stylesheet">
+
     <style>
         :root { --ya-turq: #06b6d4; --ver-yellow: #fbbf24; --bg-slate: #0f172a; }
         body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; background-color: var(--bg-slate); color: #f1f5f9; scroll-behavior: smooth; }
         .logo-font { font-family: 'Lexend Exa', sans-serif; }
-        .glass-card { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .glass-card { background: rgba(30, 41, 59, 0.68); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
         .btn-yaver { background: linear-gradient(90deg, var(--ya-turq) 0%, var(--ver-yellow) 100%); color: #000; font-weight: 800; }
-        .tab-btn { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
-        .tab-btn.active { color: var(--ver-yellow); border-bottom-color: var(--ver-yellow); }
         .section-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ya-turq); font-weight: 800; margin-bottom: 1rem; display: block; }
-        .data-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.25rem; }
-        .data-value { font-size: 1rem; font-weight: 700; color: #fff; }
-        .violation-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; }
-        tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+        .data-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 0.25rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em; }
+        .data-value { font-size: 1.25rem; font-weight: 900; color: #fff; }
+        .badge { padding: 3px 9px; border-radius: 6px; font-size: 0.68rem; font-weight: 900; white-space: nowrap; display: inline-block; }
+        .ok { background: rgba(34,197,94,0.16); color: #4ade80; }
+        .warn { background: rgba(251,191,36,0.16); color: #fbbf24; }
+        .bad { background: rgba(239,68,68,0.16); color: #f87171; }
+        .neutral { background: rgba(148,163,184,0.16); color: #cbd5e1; }
+        tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+        th { white-space: nowrap; }
+        canvas { max-height: 280px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/5 pb-10 gap-6">
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-white/5 pb-10 gap-6">
             <div class="text-center md:text-left">
                 <h1 class="logo-font text-5xl md:text-6xl tracking-tighter">
                     <span style="color: var(--ya-turq);">YA</span><span style="color: var(--ver-yellow);">VER</span>
                 </h1>
-                <p class="text-xs font-bold tracking-[0.4em] text-slate-500 mt-2 uppercase italic">CS 考勤与性能分析</p>
+                <p class="text-xs font-bold tracking-[0.35em] text-slate-500 mt-2 uppercase italic">CS 考勤记录分析 | Vardiya ve Performans</p>
+                <p class="text-xs text-slate-500 mt-3">Excel formatı: 日期 / 客服昵称 / 客服上线时间 / 客服下线时间 / 客服在线时长 / 客服处理量 / 客服回复量</p>
             </div>
             <div class="flex flex-col items-center">
-                <input type="file" id="uploadInput" accept=".csv, .xlsx" class="hidden">
+                <input type="file" id="uploadInput" accept=".csv, .xlsx, .xls" class="hidden">
                 <label for="uploadInput" class="btn-yaver cursor-pointer px-10 py-4 rounded-xl shadow-2xl transition-all hover:scale-105 uppercase text-sm">
-                    VERİ KOVANINI YÜKLE / 上传
+                    CS KAYDI YÜKLE / 上传考勤
                 </label>
-                <span class="text-[10px] mt-2 text-slate-500 font-bold">UTC+8 (Pekin) ➔ UTC+3 (TR)</span>
+                <span class="text-[10px] mt-2 text-slate-500 font-bold">Pekin UTC+8 saatini Türkiye UTC+3 saatine çevirir.</span>
             </div>
         </header>
 
-        <div id="profilesContainer" class="space-y-12">
+        <div id="profilesContainer" class="space-y-8">
             <div class="text-center p-20 glass-card rounded-[2rem]">
-                <p class="text-slate-500 italic uppercase tracking-widest">Analiz başlatmak için veri seti yükleyin...</p>
+                <p class="text-slate-500 italic uppercase tracking-widest">Analiz başlatmak için Excel veya CSV yükleyin...</p>
             </div>
         </div>
     </div>
@@ -61,7 +67,14 @@
                     </div>
                 </div>
                 <div class="flex gap-6 text-center">
-                    <div><p class="text-[9px] text-slate-500 uppercase font-bold">Toplam İhlal</p><p class="text-xl font-black text-red-400 cs-total-vio">0</p></div>
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase font-bold">Denetlenen Gün</p>
+                        <p class="text-xl font-black text-cyan-300 cs-days">0</p>
+                    </div>
+                    <div class="border-l border-white/10 pl-6">
+                        <p class="text-[9px] text-slate-500 uppercase font-bold">Toplam İhlal</p>
+                        <p class="text-xl font-black text-red-400 cs-total-vio">0</p>
+                    </div>
                     <div class="border-l border-white/10 pl-6">
                         <p class="text-[9px] text-slate-500 uppercase font-bold">Maaş Etkisi</p>
                         <p class="text-xl font-black text-amber-400 cs-penalty">$0</p>
@@ -69,57 +82,69 @@
                 </div>
             </div>
 
-            <div class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
-                    <span class="section-title">1. Zaman ve Katılım (Attendance)</span>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><p class="data-label">Geç Kalma</p><p class="data-value cs-late">0</p></div>
-                        <div><p class="data-label">Erken Çıkış</p><p class="data-value cs-early">0</p></div>
-                        <div class="col-span-2"><p class="data-label">Ort. Online Süre</p><p class="data-value cs-avg-online">--</p></div>
-                    </div>
+            <div class="p-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div class="space-y-5 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">1. Katılım / 考勤</span>
+                    <div><p class="data-label">Geç Kalma</p><p class="data-value cs-late">0</p></div>
+                    <div><p class="data-label">Erken Çıkış</p><p class="data-value cs-early">0</p></div>
+                    <div><p class="data-label">Açık Kayıt</p><p class="data-value cs-open">0</p></div>
                 </div>
 
-                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
-                    <span class="section-title">2. İşlem ve Performans (Performance)</span>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><p class="data-label">Toplam İşlem</p><p class="data-value cs-vol">0</p></div>
-                        <div><p class="data-label">Toplam Yanıt</p><p class="data-value cs-replies">0</p></div>
-                        <div class="col-span-2"><p class="data-label">Ort. Yanıt Hızı</p><p class="data-value cs-speed">--</p></div>
-                    </div>
+                <div class="space-y-5 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">2. Süre / 在线</span>
+                    <div><p class="data-label">Ort. Online Süre</p><p class="data-value cs-avg-online">--</p></div>
+                    <div><p class="data-label">Toplam Mola</p><p class="data-value cs-stops">--</p></div>
                 </div>
 
-                <div class="space-y-6 bg-black/20 p-6 rounded-2xl">
-                    <span class="section-title">3. Operasyonel Detaylar (Operational)</span>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><p class="data-label">Oto. Kapanan</p><p class="data-value cs-auto-close">0</p></div>
-                        <div><p class="data-label">Mola Süresi</p><p class="data-value cs-stops">--</p></div>
-                        <div class="col-span-2"><p class="data-label">Çözüm Oranı</p><p class="data-value cs-resolve-rate">%0</p></div>
-                    </div>
+                <div class="space-y-5 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">3. Performans / 性能</span>
+                    <div><p class="data-label">Toplam İşlem</p><p class="data-value cs-vol">0</p></div>
+                    <div><p class="data-label">Toplam Yanıt</p><p class="data-value cs-replies">0</p></div>
+                    <div><p class="data-label">Yanıt Oranı</p><p class="data-value cs-reply-rate">%0</p></div>
                 </div>
 
+                <div class="space-y-5 bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">4. Kalite / 质量</span>
+                    <div><p class="data-label">Oto. Kapanan</p><p class="data-value cs-auto-close">0</p></div>
+                    <div><p class="data-label">Ort. Yanıt Hızı</p><p class="data-value cs-speed">--</p></div>
+                    <div><p class="data-label">Çözüm Oranı</p><p class="data-value cs-resolve-rate">%0</p></div>
+                </div>
+            </div>
+
+            <div class="px-8 pb-8 grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">Günlük İşlem ve Yanıt</span>
+                    <canvas class="volume-chart"></canvas>
+                </div>
+                <div class="bg-black/20 p-6 rounded-2xl">
+                    <span class="section-title">Online Süre ve Mola</span>
+                    <canvas class="time-chart"></canvas>
+                </div>
             </div>
 
             <div class="p-8 border-t border-white/5">
-                <details class="group">
+                <details open class="group">
                     <summary class="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all flex items-center gap-2">
-                        Günlük Detaylı Kanıt Loglarını Göster / 展开详情
+                        Günlük Kanıt Loglarını Göster / 展开详情
                         <span class="group-open:rotate-180 transition-transform">▼</span>
                     </summary>
                     <div class="mt-6 overflow-x-auto">
                         <table class="w-full text-left text-[11px]">
                             <thead>
-                                <tr class="text-slate-600 border-b border-white/5">
+                                <tr class="text-slate-500 border-b border-white/5">
                                     <th class="p-3 uppercase">Tarih</th>
-                                    <th class="p-3 uppercase">Giriş (TR)</th>
-                                    <th class="p-3 uppercase">Çıkış (TR)</th>
-                                    <th class="p-3 uppercase">Hacim</th>
-                                    <th class="p-3 uppercase">İhlal</th>
+                                    <th class="p-3 uppercase">Giriş TR</th>
+                                    <th class="p-3 uppercase">Çıkış TR</th>
+                                    <th class="p-3 uppercase">Online</th>
+                                    <th class="p-3 uppercase">İşlem</th>
+                                    <th class="p-3 uppercase">Yanıt</th>
+                                    <th class="p-3 uppercase">Oto. Kapanış</th>
+                                    <th class="p-3 uppercase">Mola</th>
+                                    <th class="p-3 uppercase">Yanıt Hızı</th>
                                     <th class="p-3 uppercase text-right">Durum</th>
                                 </tr>
                             </thead>
-                            <tbody class="cs-log-body">
-                                </tbody>
+                            <tbody class="cs-log-body"></tbody>
                         </table>
                     </div>
                 </details>
@@ -128,146 +153,473 @@
     </template>
 
     <script>
+        let activeCharts = [];
+
         const SHIFTS = {
-            'Derin': { start: 8, end: 14, label: '08:00 - 14:00' },
-            'Deniz': { start: 14, end: 20, label: '14:00 - 20:00' },
-            'Dilan': { start: 20, end: 2, label: '20:00 - 02:00' },
-            'Çiğdem': { start: 20, end: 2, label: '20:00 - 02:00' }
+            'Derin': { start: '08:00', end: '14:00', label: '08:00 - 14:00' },
+            'Deniz': { start: '14:00', end: '20:00', label: '14:00 - 20:00' },
+            'Dilan': { start: '20:00', end: '02:00', label: '20:00 - 02:00' },
+            'Çiğdem': { start: '20:00', end: '02:00', label: '20:00 - 02:00' }
+        };
+
+        const FIELD_ALIASES = {
+            date: ['日期'],
+            name: ['客服昵称', '客服名称'],
+            login: ['客服上线时间'],
+            logout: ['客服下线时间'],
+            online: ['客服在线时长', '在线时长'],
+            volume: ['客服处理量', '处理量'],
+            replies: ['客服回复量', '回复量'],
+            solvedReplied: ['已回复解决量', '解决量(已回复)'],
+            solvedUnreplied: ['未回复解决量', '解决量(未回复)'],
+            autoClose: ['自动关闭量'],
+            closedReplied: ['已回复关闭量', '关闭量(已回复)'],
+            closedUnreplied: ['未回复关闭量', '关闭量(未回复)'],
+            transferredReplied: ['已回复转交量', '转交量(已回复)'],
+            transferredUnreplied: ['未回复转交量', '转交量(未回复)'],
+            resolveRate: ['解决率'],
+            stopTime: ['停止接单时长'],
+            avgResponse: ['客服平均响应时长', '平均响应时长'],
+            avgSolve: ['客服平均解决时长', '平均解决时长'],
+            status: ['客服状态']
         };
 
         document.getElementById('uploadInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
+            if (!file) return;
+
             const reader = new FileReader();
+
             reader.onload = (evt) => {
-                let json;
-                if(file.name.endsWith('.csv')) {
+                let json = [];
+
+                if (file.name.toLowerCase().endsWith('.csv')) {
                     const text = new TextDecoder('utf-8').decode(evt.target.result);
-                    json = Papa.parse(text, {header:true, dynamicTyping:true}).data;
+                    json = Papa.parse(text, { header: true, dynamicTyping: false, skipEmptyLines: true }).data;
                 } else {
-                    const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
-                    json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: false });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    json = XLSX.utils.sheet_to_json(ws, { defval: '' });
                 }
+
                 processProfiles(json);
             };
+
             reader.readAsArrayBuffer(file);
         });
 
-        function processProfiles(data) {
-            const profiles = {};
-            const clean = data.filter(d => d.客服昵称 && SHIFTS[d.客服昵称]);
+        function findField(row, key) {
+            const aliases = FIELD_ALIASES[key] || [];
+            return aliases.find(name => Object.prototype.hasOwnProperty.call(row, name));
+        }
 
-            clean.forEach(row => {
-                const name = row.客服昵称;
-                if (!profiles[name]) profiles[name] = { 
-                    attendance: [], 
-                    stats: { late: 0, early: 0, totalOnline: 0, vol: 0, replies: 0, speed: 0, autoClose: 0, stops: 0, resolves: 0, rows: 0 }
-                };
+        function getVal(row, key, fallback = '') {
+            const field = findField(row, key);
+            return field ? row[field] : fallback;
+        }
 
-                const trLogin = convertTR(row.客服上线时间);
-                const trLogout = convertTR(row.客服下线时间);
-                const s = SHIFTS[name];
+        function toNumber(value) {
+            if (value === null || value === undefined || value === '') return 0;
+            if (typeof value === 'number') return value;
+            const cleaned = String(value).replace('%', '').replace(',', '.').trim();
+            const n = Number(cleaned);
+            return Number.isFinite(n) ? n : 0;
+        }
 
-                // İhlal Kontrolü
-                let vioType = null;
-                if (trLogin.getHours() > s.start || (trLogin.getHours() === s.start && trLogin.getMinutes() > 10)) {
-                    if (!(s.start === 20 && trLogin.getHours() < 10)) { vioType = 'GEÇ'; profiles[name].stats.late++; }
+        function parseDurationSeconds(value) {
+            if (value === null || value === undefined || value === '') return 0;
+            if (typeof value === 'number') return value;
+
+            const str = String(value).trim();
+
+            if (/^\d+:\d+:\d+$/.test(str)) {
+                const [h, m, s] = str.split(':').map(Number);
+                return h * 3600 + m * 60 + s;
+            }
+
+            if (/^\d+:\d+$/.test(str)) {
+                const [m, s] = str.split(':').map(Number);
+                return m * 60 + s;
+            }
+
+            return toNumber(str);
+        }
+
+        function parseBeijingTime(value) {
+            if (!value || value === '暂未下线') return null;
+
+            if (value instanceof Date && !isNaN(value)) {
+                return new Date(value.getTime() - 5 * 60 * 60 * 1000);
+            }
+
+            const str = String(value).trim();
+            const p = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+
+            if (!p) return null;
+
+            const beijingDate = new Date(
+                Number(p[1]),
+                Number(p[2]) - 1,
+                Number(p[3]),
+                Number(p[4]),
+                Number(p[5]),
+                Number(p[6])
+            );
+
+            return new Date(beijingDate.getTime() - 5 * 60 * 60 * 1000);
+        }
+
+        function normalizeDate(value) {
+            if (!value) return '';
+
+            if (typeof value === 'number') {
+                const date = XLSX.SSF.parse_date_code(value);
+                if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+            }
+
+            return String(value).trim().slice(0, 10);
+        }
+
+        function timeToMinutes(time) {
+            const [h, m] = time.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function dateAtTime(baseDate, time) {
+            const [h, m] = time.split(':').map(Number);
+            const d = new Date(baseDate);
+            d.setHours(h, m, 0, 0);
+            return d;
+        }
+
+        function shiftWindowForLogin(login, shift) {
+            const start = dateAtTime(login, shift.start);
+            let end = dateAtTime(login, shift.end);
+
+            if (timeToMinutes(shift.end) <= timeToMinutes(shift.start)) {
+                end.setDate(end.getDate() + 1);
+            }
+
+            if (login < start && timeToMinutes(shift.end) <= timeToMinutes(shift.start)) {
+                const previousStart = new Date(start);
+                previousStart.setDate(previousStart.getDate() - 1);
+                const previousEnd = new Date(end);
+                previousEnd.setDate(previousEnd.getDate() - 1);
+
+                if (login <= previousEnd) {
+                    return { start: previousStart, end: previousEnd };
                 }
-                
-                let isEarly = false;
-                if (s.end === 2) {
-                    if (trLogout.getHours() < 2 || trLogout.getHours() >= 20) {
-                        if (trLogout.getHours() < 2 && (trLogout.getHours() > 0 || trLogout.getMinutes() < 55)) {
-                            if (trLogout.getHours() === 1 && trLogout.getMinutes() < 55) isEarly = true;
-                            else if (trLogout.getHours() === 0) isEarly = true;
-                        } else if (trLogout.getHours() >= 20 && trLogout.getHours() < 23) isEarly = true;
-                    } else isEarly = true;
-                } else if (trLogout.getHours() < s.end) isEarly = true;
+            }
 
-                if (isEarly) { vioType = vioType ? 'GEÇ+ERKEN' : 'ERKEN'; profiles[name].stats.early++; }
+            return { start, end };
+        }
 
-                // Veri Toplama
-                profiles[name].stats.vol += (row.客服处理量 || 0);
-                profiles[name].stats.replies += (row.客服回复量 || 0);
-                profiles[name].stats.autoClose += (row.自动关闭量 || 0);
-                profiles[name].stats.totalOnline += (row.客服在线时长 || 0);
-                profiles[name].stats.speed += (row.客服平均响应时长 || 0);
-                profiles[name].stats.stops += (row.停止接单时长 || 0);
-                profiles[name].stats.resolves += (row.已回复解决量 || 0);
-                profiles[name].stats.rows++;
+        function formatTime(d) {
+            if (!d) return 'AÇIK';
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
 
-                profiles[name].attendance.push({
-                    date: row.日期,
-                    login: formatT(trLogin),
-                    logout: formatT(trLogout),
-                    vol: row.客服处理量,
-                    vio: vioType,
-                    status: row.客服状态
+        function formatDuration(seconds) {
+            seconds = Math.round(seconds || 0);
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+
+            if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function evaluateAttendance(row) {
+            const shift = SHIFTS[row.name];
+
+            if (!shift || !row.loginTR) {
+                return {
+                    late: false,
+                    early: false,
+                    open: !row.logoutTR,
+                    label: 'DENETİM DIŞI',
+                    className: 'neutral'
+                };
+            }
+
+            const win = shiftWindowForLogin(row.loginTR, shift);
+            const lateLimit = new Date(win.start.getTime() + 10 * 60 * 1000);
+            const earlyLimit = new Date(win.end.getTime() - 5 * 60 * 1000);
+
+            const late = row.loginTR > lateLimit;
+            const open = !row.logoutTR;
+            const early = row.logoutTR ? row.logoutTR < earlyLimit : false;
+
+            let label = 'NORMAL';
+            let className = 'ok';
+
+            if (open) {
+                label = late ? 'GEÇ + AÇIK' : 'AÇIK KAYIT';
+                className = late ? 'bad' : 'warn';
+            } else if (late && early) {
+                label = 'GEÇ + ERKEN';
+                className = 'bad';
+            } else if (late) {
+                label = 'GEÇ';
+                className = 'bad';
+            } else if (early) {
+                label = 'ERKEN';
+                className = 'bad';
+            }
+
+            return { late, early, open, label, className, shiftStart: win.start, shiftEnd: win.end };
+        }
+
+        function processProfiles(data) {
+            const rows = data
+                .filter(row => getVal(row, 'name'))
+                .map(row => {
+                    const mapped = {
+                        date: normalizeDate(getVal(row, 'date')),
+                        name: String(getVal(row, 'name')).trim(),
+                        loginTR: parseBeijingTime(getVal(row, 'login')),
+                        logoutTR: parseBeijingTime(getVal(row, 'logout')),
+                        onlineSeconds: parseDurationSeconds(getVal(row, 'online')),
+                        volume: toNumber(getVal(row, 'volume')),
+                        replies: toNumber(getVal(row, 'replies')),
+                        solvedReplied: toNumber(getVal(row, 'solvedReplied')),
+                        solvedUnreplied: toNumber(getVal(row, 'solvedUnreplied')),
+                        autoClose: toNumber(getVal(row, 'autoClose')),
+                        stopSeconds: parseDurationSeconds(getVal(row, 'stopTime')),
+                        avgResponseSeconds: parseDurationSeconds(getVal(row, 'avgResponse')),
+                        avgSolveSeconds: parseDurationSeconds(getVal(row, 'avgSolve')),
+                        status: String(getVal(row, 'status', '')).trim()
+                    };
+
+                    mapped.attendance = evaluateAttendance(mapped);
+                    return mapped;
+                });
+
+            if (!rows.length) {
+                renderEmptyState('Bu dosyada beklenen CS kolonları bulunamadı. En az 客服昵称 ve 客服上线时间 olmalı.');
+                return;
+            }
+
+            const profiles = {};
+
+            rows.forEach(row => {
+                if (!profiles[row.name]) {
+                    profiles[row.name] = {
+                        name: row.name,
+                        rows: [],
+                        totals: {
+                            days: 0,
+                            late: 0,
+                            early: 0,
+                            open: 0,
+                            onlineSeconds: 0,
+                            volume: 0,
+                            replies: 0,
+                            solvedReplied: 0,
+                            solvedUnreplied: 0,
+                            autoClose: 0,
+                            stopSeconds: 0,
+                            avgResponseWeighted: 0
+                        }
+                    };
+                }
+
+                const p = profiles[row.name];
+
+                p.rows.push(row);
+                p.totals.days++;
+                p.totals.late += row.attendance.late ? 1 : 0;
+                p.totals.early += row.attendance.early ? 1 : 0;
+                p.totals.open += row.attendance.open ? 1 : 0;
+                p.totals.onlineSeconds += row.onlineSeconds;
+                p.totals.volume += row.volume;
+                p.totals.replies += row.replies;
+                p.totals.solvedReplied += row.solvedReplied;
+                p.totals.solvedUnreplied += row.solvedUnreplied;
+                p.totals.autoClose += row.autoClose;
+                p.totals.stopSeconds += row.stopSeconds;
+                p.totals.avgResponseWeighted += row.avgResponseSeconds * Math.max(row.volume, 1);
+            });
+
+            Object.values(profiles).forEach(profile => {
+                profile.rows.sort((a, b) => {
+                    const aKey = `${a.date} ${formatTime(a.loginTR)}`;
+                    const bKey = `${b.date} ${formatTime(b.loginTR)}`;
+                    return aKey.localeCompare(bKey);
                 });
             });
 
             renderProfiles(profiles);
         }
 
-        function convertTR(str) {
-            const p = str.match(/(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/);
-            if(!p) return new Date();
-            return new Date(new Date(p[1], p[2]-1, p[3], p[4], p[5], p[6]).getTime() - (5 * 60 * 60 * 1000));
+        function renderEmptyState(message) {
+            activeCharts.forEach(chart => chart.destroy());
+            activeCharts = [];
+            document.getElementById('profilesContainer').innerHTML = `
+                <div class="text-center p-20 glass-card rounded-[2rem]">
+                    <p class="text-red-300 font-black uppercase tracking-widest">${message}</p>
+                </div>
+            `;
         }
 
-        function formatT(d) { return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0'); }
-
         function renderProfiles(profiles) {
+            activeCharts.forEach(chart => chart.destroy());
+            activeCharts = [];
+
             const container = document.getElementById('profilesContainer');
             const template = document.getElementById('csTemplate');
             container.innerHTML = '';
 
-            Object.keys(profiles).forEach(name => {
-                const p = profiles[name];
-                const s = p.stats;
+            Object.values(profiles).forEach(profile => {
+                const p = profile.totals;
+                const rows = profile.rows;
+                const shift = SHIFTS[profile.name];
                 const clone = template.content.cloneNode(true);
-
-                // Header
-                clone.querySelector('.cs-initial').innerText = name[0];
-                clone.querySelector('.cs-name').innerText = name;
-                clone.querySelector('.cs-shift').innerText = `Vardiya (TR): ${SHIFTS[name].label}`;
-                const totalVio = s.late + s.early;
-                clone.querySelector('.cs-total-vio').innerText = totalVio;
+                const totalVio = p.late + p.early;
                 const penalty = totalVio > 4 ? totalVio * 20 : 0;
+                const replyRate = p.volume > 0 ? (p.replies / p.volume) * 100 : 0;
+                const resolveRate = p.volume > 0 ? (p.solvedReplied / p.volume) * 100 : 0;
+                const avgResponse = p.volume > 0 ? p.avgResponseWeighted / p.volume : 0;
+
+                clone.querySelector('.cs-initial').innerText = profile.name[0] || '?';
+                clone.querySelector('.cs-name').innerText = profile.name;
+                clone.querySelector('.cs-shift').innerText = `Vardiya (TR): ${shift ? shift.label : 'Tanımsız'}`;
+                clone.querySelector('.cs-days').innerText = p.days;
+                clone.querySelector('.cs-total-vio').innerText = totalVio;
                 clone.querySelector('.cs-penalty').innerText = `$${penalty}`;
 
-                // 1. Attendance
-                clone.querySelector('.cs-late').innerText = s.late;
-                clone.querySelector('.cs-early').innerText = s.early;
-                clone.querySelector('.cs-avg-online').innerText = Math.round((s.totalOnline / s.rows) / 60) + " dk";
+                clone.querySelector('.cs-late').innerText = p.late;
+                clone.querySelector('.cs-early').innerText = p.early;
+                clone.querySelector('.cs-open').innerText = p.open;
 
-                // 2. Performance
-                clone.querySelector('.cs-vol').innerText = s.vol;
-                clone.querySelector('.cs-replies').innerText = s.replies;
-                clone.querySelector('.cs-speed').innerText = Math.round(s.speed / s.rows) + " sn";
+                clone.querySelector('.cs-avg-online').innerText = formatDuration(p.days ? p.onlineSeconds / p.days : 0);
+                clone.querySelector('.cs-stops').innerText = formatDuration(p.stopSeconds);
 
-                // 3. Operational
-                clone.querySelector('.cs-auto-close').innerText = s.autoClose;
-                clone.querySelector('.cs-stops').innerText = Math.round(s.stops / s.rows / 60) + " dk";
-                const resRate = s.vol > 0 ? ((s.resolves / s.vol) * 100).toFixed(1) : 0;
-                clone.querySelector('.cs-resolve-rate').innerText = `%${resRate}`;
+                clone.querySelector('.cs-vol').innerText = p.volume.toLocaleString('tr-TR');
+                clone.querySelector('.cs-replies').innerText = p.replies.toLocaleString('tr-TR');
+                clone.querySelector('.cs-reply-rate').innerText = `%${replyRate.toFixed(1)}`;
 
-                // Table
+                clone.querySelector('.cs-auto-close').innerText = p.autoClose.toLocaleString('tr-TR');
+                clone.querySelector('.cs-speed').innerText = formatDuration(avgResponse);
+                clone.querySelector('.cs-resolve-rate').innerText = `%${resolveRate.toFixed(1)}`;
+
                 const tbody = clone.querySelector('.cs-log-body');
-                p.attendance.reverse().forEach(log => {
+
+                rows.slice().reverse().forEach(row => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="p-3 text-slate-400">${log.date}</td>
-                        <td class="p-3 font-bold">${log.login}</td>
-                        <td class="p-3 font-bold">${log.logout}</td>
-                        <td class="p-3 text-slate-400">${log.vol}</td>
-                        <td class="p-3">${log.vio ? `<span class="violation-badge ${log.vio.includes('GEÇ') ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}">${log.vio}</span>` : '-'}</td>
-                        <td class="p-3 text-right text-[9px] uppercase font-bold text-slate-600">${log.status}</td>
+                        <td class="p-3 text-slate-400">${row.date}</td>
+                        <td class="p-3 font-bold">${formatTime(row.loginTR)}</td>
+                        <td class="p-3 font-bold">${formatTime(row.logoutTR)}</td>
+                        <td class="p-3 text-slate-300">${formatDuration(row.onlineSeconds)}</td>
+                        <td class="p-3 text-slate-300">${row.volume}</td>
+                        <td class="p-3 text-slate-300">${row.replies}</td>
+                        <td class="p-3 text-slate-300">${row.autoClose}</td>
+                        <td class="p-3 text-slate-300">${formatDuration(row.stopSeconds)}</td>
+                        <td class="p-3 text-slate-300">${formatDuration(row.avgResponseSeconds)}</td>
+                        <td class="p-3 text-right">
+                            <span class="badge ${row.attendance.className}">${row.attendance.label}</span>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
 
                 container.appendChild(clone);
+
+                const cards = container.querySelectorAll('.cs-profile');
+                const currentCard = cards[cards.length - 1];
+
+                createVolumeChart(currentCard.querySelector('.volume-chart'), rows);
+                createTimeChart(currentCard.querySelector('.time-chart'), rows);
             });
+        }
+
+        function createVolumeChart(canvas, rows) {
+            const chart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: rows.map(r => r.date),
+                    datasets: [
+                        {
+                            label: '客服处理量 / İşlem',
+                            data: rows.map(r => r.volume),
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6,182,212,0.12)',
+                            tension: 0.32,
+                            fill: true
+                        },
+                        {
+                            label: '客服回复量 / Yanıt',
+                            data: rows.map(r => r.replies),
+                            borderColor: '#fbbf24',
+                            backgroundColor: 'rgba(251,191,36,0.12)',
+                            tension: 0.32,
+                            fill: true
+                        },
+                        {
+                            label: '自动关闭量 / Oto. Kapanış',
+                            data: rows.map(r => r.autoClose),
+                            borderColor: '#f87171',
+                            backgroundColor: 'rgba(248,113,113,0.10)',
+                            tension: 0.32,
+                            fill: true
+                        }
+                    ]
+                },
+                options: chartOptions()
+            });
+
+            activeCharts.push(chart);
+        }
+
+        function createTimeChart(canvas, rows) {
+            const chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: rows.map(r => r.date),
+                    datasets: [
+                        {
+                            label: '在线时长 / Online saat',
+                            data: rows.map(r => Number((r.onlineSeconds / 3600).toFixed(2))),
+                            backgroundColor: 'rgba(6,182,212,0.65)'
+                        },
+                        {
+                            label: '停止接单时长 / Mola dk',
+                            data: rows.map(r => Math.round(r.stopSeconds / 60)),
+                            backgroundColor: 'rgba(251,191,36,0.65)'
+                        }
+                    ]
+                },
+                options: chartOptions()
+            });
+
+            activeCharts.push(chart);
+        }
+
+        function chartOptions() {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#cbd5e1',
+                            boxWidth: 10,
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 0 },
+                        grid: { color: 'rgba(255,255,255,0.04)' }
+                    },
+                    y: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    }
+                }
+            };
         }
     </script>
 </body>
